@@ -783,18 +783,12 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log('✅ Footer content available, initializing...');
         updateFooterContent(); // This will show the footer and start animation
       } else {
-        console.log('⚠️ Empty footer text in database, hiding footer');
-        const footerContainer = document.querySelector('.Footer');
-        if (footerContainer) {
-          footerContainer.style.display = 'none';
-        }
+        console.log('⚠️ Empty footer text in database, keeping HTML fallback content');
+        // Keep the HTML content visible - don't hide footer
       }
     } else {
-      console.log('ℹ️ No footer content in database, hiding footer');
-      const footerContainer = document.querySelector('.Footer');
-      if (footerContainer) {
-        footerContainer.style.display = 'none';
-      }
+      console.log('ℹ️ No footer content in database, keeping HTML fallback content');
+      // Keep the HTML content visible - don't hide footer
     }
   }
 
