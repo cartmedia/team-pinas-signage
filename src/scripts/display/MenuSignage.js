@@ -349,8 +349,13 @@ document.addEventListener("DOMContentLoaded", function () {
     return out;
   }
 
-  // Initialize CMS connector
-  const cmsConnector = window.CMSConnector ? new window.CMSConnector() : null;
+  // Initialize CMS connector with fallback config
+  const cmsConnector = window.CMSConnector ? new window.CMSConnector({
+    cache: { enabled: true, duration: 300000 },
+    api: { baseUrl: '/.netlify/functions', timeout: 10000 },
+    refresh: { interval: 300000 }, // 5 minutes
+    retries: { max: 3, delay: 1000 }
+  }) : null;
   
   // Load products from CMS or fallback to local JSON
   const loadProducts = async () => {
@@ -626,7 +631,8 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
         // Set up periodic refresh
-        setInterval(refreshData, cmsConnector.config.refresh.interval);
+        const refreshInterval = cmsConnector?.config?.refresh?.interval || 300000; // 5 minutes fallback
+        setInterval(refreshData, refreshInterval);
 
         // Listen for reconnection events
         window.addEventListener('cms-reconnected', refreshData);
