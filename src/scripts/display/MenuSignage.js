@@ -20,7 +20,7 @@ if (!debugMode) {
 // Hide loading screen when menu data is ready
 function hideLoadingScreenWhenReady() {
   let attempts = 0;
-  const maxAttempts = 10; // Max 2 seconds (10 * 200ms)
+  const maxAttempts = 3; // Max 0.6 seconds (3 * 200ms)
   
   console.log('🔄 hideLoadingScreenWhenReady started');
   
@@ -39,23 +39,23 @@ function hideLoadingScreenWhenReady() {
       attempts++;
       setTimeout(checkDataReady, 200);
     } else {
-      // Safety timeout - hide loading screen even if no data loaded
-      console.warn('⏰ Loading screen timeout - hiding anyway after 2 seconds');
+      // Safety timeout - hide loading screen even if no data loaded  
+      console.warn('⏰ Loading screen timeout - hiding anyway after 0.6 seconds');
       hideLoadingScreen();
     }
   };
   
   // Start checking after a minimal initial delay to ensure DOM is ready
-  setTimeout(checkDataReady, 300);
+  setTimeout(checkDataReady, 100);
   
-  // Additional safety net - force hide after 3 seconds no matter what
+  // Additional safety net - force hide after 1 second no matter what
   setTimeout(() => {
     const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen && !loadingScreen.classList.contains('fade-out')) {
-      console.warn('🚨 EMERGENCY: Force hiding loading screen after 3 seconds');
+      console.warn('🚨 EMERGENCY: Force hiding loading screen after 1 second');
       hideLoadingScreen();
     }
-  }, 3000);
+  }, 1000);
 }
 
 // Actually hide the loading screen with animation
