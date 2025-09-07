@@ -687,8 +687,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     
     if (footerContinuous) {
-      // Voor echte continue scrolling: dupliceer de content met extra spacing
-      scrollingTextSpan.innerHTML = htmlContent + ' ' + htmlContent;
+      // Voor echte continue scrolling: dupliceer de content zonder extra spacing
+      scrollingTextSpan.innerHTML = htmlContent + htmlContent;
       scrollingTextSpan.style.animationName = 'scrollTextContinuous';
     } else {
       // Discrete mode: enkele content met natuurlijke pauze
@@ -720,10 +720,10 @@ document.addEventListener("DOMContentLoaded", function () {
     let totalDistance;
     
     if (footerContinuous && spanWidth > 0) {
-      // Continue: van 100% naar -50% = 150% van container breedte
-      // Maar we gebruiken halve span breedte omdat content gedupliceerd is
+      // Continue: van 100% naar -100% = 200% van container breedte
+      // Content is gedupliceerd, dus halve span breedte = echte content breedte
       spanWidth = spanWidth / 2;
-      totalDistance = containerWidth + (spanWidth / 2); // 100% + 50% van de echte content
+      totalDistance = containerWidth + spanWidth; // 100% container + volledige content breedte
     } else {
       // Discrete: van 100% naar -100% = 200% van container breedte  
       totalDistance = spanWidth + (2 * containerWidth); // Volledige span + 200% container
