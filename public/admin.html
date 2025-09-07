@@ -222,11 +222,12 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
                     <div class="flex flex-col">
-                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-baseline">
                             <i class="fas fa-tv text-blue-600 dark:text-blue-400 mr-2"></i>
-                            CounterCast Admin <sub class="text-sm font-normal text-gray-500" id="versionDisplay">v1.0.0</sub>
+                            <span>CounterCast Admin</span>
+                            <sub class="text-sm font-normal text-gray-500 ml-2" id="versionDisplay">v1.0.0</sub>
+                            <span class="text-sm font-normal text-gray-600 dark:text-gray-400 ml-4">: Team Pinas</span>
                         </h1>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 ml-8">Team Pinas</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -422,7 +423,7 @@
                         <div class="space-y-3">
                             <h4 class="font-semibold text-gray-900 dark:text-white flex items-center">
                                 <i class="fas fa-cog mr-2 text-sm"></i>
-                                Display Instellingen
+                                <span class="dashboard-settings-title">Display Instellingen</span>
                             </h4>
                             <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                                 <div class="grid grid-cols-2 gap-4 text-sm">
@@ -623,125 +624,304 @@
         <!-- Instellingen Tab -->
         <div id="settings-tab" class="tab-content hidden">
             <div class="mb-6">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Instellingen</h2>
-                <p class="text-gray-600 dark:text-gray-400">Configureer display layout en footer instellingen</p>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    <span id="settingsTitle">CounterCast Signage Instellingen</span>
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400">Configureer alle aspecten van je digitale signage platform</p>
             </div>
             
-            <!-- Display Settings -->
-        <div class="mt-8">
-            <div class="bg-white dark:bg-gray-800 shadow rounded-lg transition-colors">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-                        <i class="fas fa-cog mr-2"></i>
-                        Display Instellingen
-                    </h3>
-                </div>
-                <div class="p-6">
-                    <div class="space-y-6">
-                        <!-- Layout Settings Row -->
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Aantal Kolommen
-                                </label>
-                                <select id="displayColumns" 
-                                        class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="1">1 Kolom (Fullscreen)</option>
-                                    <option value="2" selected>2 Kolommen (Standaard)</option>
-                                </select>
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    Kies hoeveel kolommen er op het display getoond worden
-                                </p>
+            <!-- Master-Detail Settings Layout -->
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg transition-colors overflow-hidden">
+                <div class="flex">
+                    
+                    <!-- Master: Settings Navigation (Left Sidebar) -->
+                    <div class="w-64 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
+                        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">
+                                Categorieën
+                            </h3>
+                        </div>
+                        
+                        <nav class="p-2 space-y-1">
+                            <!-- Organisatie Settings -->
+                            <div class="settings-category">
+                                <button class="settings-nav-item w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                        data-category="organization">
+                                    <i class="fas fa-building mr-3 text-gray-400"></i>
+                                    <span>Organisatie</span>
+                                </button>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Slide Snelheid (sec)
-                                </label>
-                                <input type="number" id="slideSpeed" min="3" max="30" step="1"
-                                       class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                       value="6">
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    Hoe snel categorieën wisselen (3-30 seconden)
-                                </p>
+                            
+                            <!-- Display Settings -->
+                            <div class="settings-category">
+                                <button class="settings-nav-item active w-full flex items-center px-3 py-2 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-md transition-colors"
+                                        data-category="display">
+                                    <i class="fas fa-desktop mr-3"></i>
+                                    <span>Display</span>
+                                </button>
+                                <div class="ml-6 mt-1 space-y-1">
+                                    <button class="settings-nav-subitem w-full flex items-center px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                            data-subcategory="layout">
+                                        <i class="fas fa-columns mr-2 text-xs"></i>
+                                        Layout
+                                    </button>
+                                    <button class="settings-nav-subitem w-full flex items-center px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                            data-subcategory="timing">
+                                        <i class="fas fa-clock mr-2 text-xs"></i>
+                                        Timing
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Header Hoogte (vh)
-                                </label>
-                                <input type="number" id="headerHeight" min="5" max="30" step="1"
-                                       class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                       value="15">
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    Header hoogte in viewport height (5-30vh)
-                                </p>
+                            
+                            <!-- Footer Settings -->
+                            <div class="settings-category">
+                                <button class="settings-nav-item w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                        data-category="footer">
+                                    <i class="fas fa-align-center mr-3 text-gray-400"></i>
+                                    <span>Footer</span>
+                                </button>
+                                <div class="ml-6 mt-1 space-y-1 hidden">
+                                    <button class="settings-nav-subitem w-full flex items-center px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                            data-subcategory="text">
+                                        <i class="fas fa-font mr-2 text-xs"></i>
+                                        Tekst
+                                    </button>
+                                    <button class="settings-nav-subitem w-full flex items-center px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                            data-subcategory="animation">
+                                        <i class="fas fa-play mr-2 text-xs"></i>
+                                        Animatie
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Footer Hoogte (vh)
-                                </label>
-                                <input type="number" id="footerHeight" min="3" max="20" step="1"
-                                       class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                       value="8">
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    Footer hoogte in viewport height (3-20vh)
-                                </p>
+                            
+                            <!-- Branding Settings -->
+                            <div class="settings-category">
+                                <button class="settings-nav-item w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                        data-category="branding">
+                                    <i class="fas fa-palette mr-3 text-gray-400"></i>
+                                    <span>Branding</span>
+                                </button>
+                            </div>
+                            
+                            <!-- System Settings -->
+                            <div class="settings-category">
+                                <button class="settings-nav-item w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                                        data-category="system">
+                                    <i class="fas fa-cog mr-3 text-gray-400"></i>
+                                    <span>Systeem</span>
+                                </button>
+                            </div>
+                        </nav>
+                    </div>
+                    
+                    <!-- Detail: Settings Content (Right Panel) -->
+                    <div class="flex-1 min-w-0">
+                        
+                        <!-- Organization Settings Panel -->
+                        <div id="settings-organization" class="settings-detail-panel hidden p-6">
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Organisatie Instellingen</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Configureer je organisatie gegevens en branding</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Organisatie Naam
+                                    </label>
+                                    <input type="text" id="organizationName" placeholder="Team Pinas"
+                                           class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                           value="">
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                        Naam die getoond wordt in het loading scherm: "{organisatieNaam} prijzen worden geladen..."
+                                    </p>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Footer Text Settings -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Footer Tekst Regels
-                            </label>
-                            <div id="footerTextLines" class="space-y-2 mb-3">
-                                <!-- Footer text lines will be added here dynamically -->
+                        
+                        <!-- Display Settings Panel -->
+                        <div id="settings-display" class="settings-detail-panel p-6">
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Display Instellingen</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Layout, timing en visualisatie van je signage display</p>
                             </div>
-                            <button type="button" id="addFooterLine" 
-                                    class="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-                                <i class="fas fa-plus mr-1"></i>
-                                Nieuwe regel toevoegen
-                            </button>
-                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                SVG scheidingen (kroon) worden automatisch tussen elke regel geplaatst.
-                            </p>
-                        </div>
-
-                        <!-- Footer Scroll Settings Row -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Scroll Type
-                                </label>
-                                <select id="footerContinuous" 
-                                        class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="true" selected>Continu (naadloos)</option>
-                                    <option value="false">Discreet (met pauzes)</option>
-                                </select>
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    Continu = geen whitespace tussen einde en begin
-                                </p>
+                            
+                            <div class="space-y-8">
+                                <!-- Layout Settings -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i class="fas fa-columns mr-2 text-blue-500"></i>
+                                        Layout Instellingen
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Aantal Kolommen
+                                            </label>
+                                            <select id="displayColumns" 
+                                                    class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="1">1 Kolom (Fullscreen)</option>
+                                                <option value="2" selected>2 Kolommen (Standaard)</option>
+                                            </select>
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Kies hoeveel kolommen er op het display getoond worden
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Slide Snelheid (sec)
+                                            </label>
+                                            <input type="number" id="slideSpeed" min="3" max="30" step="1"
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   value="6">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Hoe snel categorieën wisselen (3-30 seconden)
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Height Settings -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i class="fas fa-arrows-alt-v mr-2 text-green-500"></i>
+                                        Hoogte Instellingen
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Header Hoogte (vh)
+                                            </label>
+                                            <input type="number" id="headerHeight" min="5" max="30" step="1"
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   value="15">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Header hoogte in viewport height (5-30vh)
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Footer Hoogte (vh)
+                                            </label>
+                                            <input type="number" id="footerHeight" min="3" max="20" step="1"
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   value="8">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Footer hoogte in viewport height (3-20vh)
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Scroll Snelheid
-                                </label>
-                                <input type="number" id="footerSpeed" min="10" max="100" step="5"
-                                       class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                       value="30">
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    Pixels per seconde (10-100, lager = langzamer)
-                                </p>
+                        </div>
+                        
+                        <!-- Footer Settings Panel -->
+                        <div id="settings-footer" class="settings-detail-panel hidden p-6">
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Footer Instellingen</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Tekst en animatie instellingen voor de footer</p>
+                            </div>
+                            
+                            <div class="space-y-8">
+                                <!-- Footer Text -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i class="fas fa-font mr-2 text-purple-500"></i>
+                                        Tekst Regels
+                                    </h4>
+                                    <div id="footerTextLines" class="space-y-2 mb-3">
+                                        <!-- Footer text lines will be added here dynamically -->
+                                    </div>
+                                    <button type="button" id="addFooterLine" 
+                                            class="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+                                        <i class="fas fa-plus mr-1"></i>
+                                        Nieuwe regel toevoegen
+                                    </button>
+                                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                        SVG scheidingen (kroon) worden automatisch tussen elke regel geplaatst.
+                                    </p>
+                                </div>
+                                
+                                <!-- Animation Settings -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i class="fas fa-play mr-2 text-orange-500"></i>
+                                        Animatie Instellingen
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Scroll Type
+                                            </label>
+                                            <select id="footerContinuous" 
+                                                    class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="true" selected>Continu (naadloos)</option>
+                                                <option value="false">Discreet (met pauzes)</option>
+                                            </select>
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Continu = geen whitespace tussen einde en begin
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Scroll Snelheid
+                                            </label>
+                                            <input type="number" id="footerSpeed" min="10" max="100" step="5"
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   value="30">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Pixels per seconde (10-100, lager = langzamer)
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Save Button -->
-                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <button id="saveSettings" 
-                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
-                                <i class="fas fa-save mr-2"></i>
-                                Instellingen Opslaan
-                            </button>
+                        
+                        <!-- Branding Settings Panel -->
+                        <div id="settings-branding" class="settings-detail-panel hidden p-6">
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Branding Instellingen</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Logo, kleuren en huisstijl aanpassingen</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-paint-brush text-4xl mb-3"></i>
+                                    <p>Branding instellingen komen binnenkort beschikbaar</p>
+                                </div>
+                            </div>
                         </div>
+                        
+                        <!-- System Settings Panel -->
+                        <div id="settings-system" class="settings-detail-panel hidden p-6">
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Systeem Instellingen</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Cache, debug en backup instellingen</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-server text-4xl mb-3"></i>
+                                    <p>Systeem instellingen komen binnenkort beschikbaar</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Save Button (Fixed at bottom) -->
+                        <div class="border-t border-gray-200 dark:border-gray-700 p-6">
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                    Wijzigingen worden automatisch opgeslagen
+                                </div>
+                                <button id="saveSettings" 
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center font-medium transition-colors">
+                                    <i class="fas fa-save mr-2"></i>
+                                    Instellingen Opslaan
+                                </button>
+                            </div>
+                        </div>
+                        
                     </div>
                 </div>
             </div>

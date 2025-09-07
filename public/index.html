@@ -12,13 +12,45 @@
     <script src="/src/scripts/shared/logo-controls.js"></script>
     <script src="/src/scripts/shared/cms-connector.js"></script>
     <script src="/src/scripts/display/MenuSignage.js"></script>
+    <script>
+      // Load dynamic loading text from version.json and settings
+      document.addEventListener('DOMContentLoaded', async function() {
+        try {
+          // Load version info
+          const versionResponse = await fetch('/version.json');
+          const versionData = await versionResponse.json();
+          
+          // Load settings for organization name
+          let organizationName = 'Team Pinas'; // Default fallback
+          try {
+            const settingsResponse = await fetch('/.netlify/functions/settings');
+            if (settingsResponse.ok) {
+              const settingsData = await settingsResponse.json();
+              organizationName = settingsData.settings?.organization_name || versionData.brandName || organizationName;
+            }
+          } catch (settingsError) {
+            console.log('Settings not available, using version brandName or default');
+            organizationName = versionData.brandName || organizationName;
+          }
+          
+          // Update loading text
+          const loadingTextEl = document.getElementById('loadingText');
+          if (loadingTextEl && versionData.loadingText) {
+            const customLoadingText = versionData.loadingText.replace('{organisatieName}', organizationName);
+            loadingTextEl.textContent = customLoadingText;
+          }
+        } catch (error) {
+          console.log('Could not load dynamic loading text, keeping default');
+        }
+      });
+    </script>
   </head>
   <body>
     <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
       <div class="loading-content">
         <img src="assets/images/pinas_kroon.svg" alt="Team Pinas" class="loading-logo">
-        <div class="loading-text">CounterCast Menu wordt geladen...</div>
+        <div class="loading-text" id="loadingText">CounterCast Menu wordt geladen...</div>
         <div class="loading-brand" style="margin-top: 10px; font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">Team Pinas</div>
         <div class="loading-spinner"></div>
       </div>

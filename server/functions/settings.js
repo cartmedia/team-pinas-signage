@@ -105,7 +105,16 @@ async function getSettings(client, headers) {
 }
 
 async function updateSettings(client, headers, data) {
-  const { display_columns, header_height, footer_height, footer_text, footer_speed, footer_continuous } = data;
+  const { 
+    display_columns, 
+    header_height, 
+    footer_height, 
+    footer_text, 
+    footer_speed, 
+    footer_continuous,
+    organization_name,
+    rotation_interval
+  } = data;
   
   const updates = [
     { key: 'display_columns', value: display_columns, type: 'number' },
@@ -113,7 +122,9 @@ async function updateSettings(client, headers, data) {
     { key: 'footer_height', value: footer_height, type: 'number' },
     { key: 'footer_text', value: footer_text, type: 'string' },
     { key: 'footer_speed', value: footer_speed, type: 'number' },
-    { key: 'footer_continuous', value: footer_continuous, type: 'boolean' }
+    { key: 'footer_continuous', value: footer_continuous, type: 'boolean' },
+    { key: 'organization_name', value: organization_name, type: 'string' },
+    { key: 'rotation_interval', value: rotation_interval, type: 'number' }
   ];
 
   // Update or insert each setting

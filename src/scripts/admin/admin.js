@@ -95,6 +95,9 @@ class AdminInterface {
       this.saveDisplaySettings();
     });
 
+    // Settings navigation handlers
+    this.setupSettingsNavigation();
+
     // Footer text lines handlers - WITH DEBUGGING
     const addFooterLineBtn = document.getElementById('addFooterLine');
     if (addFooterLineBtn) {
@@ -834,6 +837,7 @@ class AdminInterface {
         const footerText = document.getElementById('footerText');
         const footerSpeed = document.getElementById('footerSpeed');
         const footerContinuous = document.getElementById('footerContinuous');
+        const organizationName = document.getElementById('organizationName');
         
         if (displayColumns) displayColumns.value = data.settings.display_columns || '2';
         if (slideSpeed) slideSpeed.value = (data.settings.rotation_interval || 6000) / 1000; // Convert ms to seconds
@@ -841,6 +845,10 @@ class AdminInterface {
         if (footerHeight) footerHeight.value = data.settings.footer_height || '8';
         if (footerSpeed) footerSpeed.value = data.settings.footer_speed || '30';
         if (footerContinuous) footerContinuous.value = data.settings.footer_continuous !== false ? 'true' : 'false';
+        if (organizationName) organizationName.value = data.settings.organization_name || '';
+        
+        // Update settings title based on organization name
+        this.updateSettingsTitle(data.settings.organization_name);
         
         // Load footer text lines
         this.loadFooterTextLines(data.settings.footer_text);
@@ -862,6 +870,7 @@ class AdminInterface {
       const footerHeight = document.getElementById('footerHeight')?.value || '8';
       const footerSpeed = document.getElementById('footerSpeed')?.value || '30';
       const footerContinuous = document.getElementById('footerContinuous')?.value === 'true';
+      const organizationName = document.getElementById('organizationName')?.value || '';
       
       // Collect footer text lines from dynamic inputs
       const footerText = this.collectFooterTextLines();
@@ -873,7 +882,8 @@ class AdminInterface {
         footer_height: parseInt(footerHeight),
         footer_text: footerText,
         footer_speed: parseInt(footerSpeed),
-        footer_continuous: footerContinuous
+        footer_continuous: footerContinuous,
+        organization_name: organizationName
       };
 
       const response = await this.apiCall('/.netlify/functions/settings', {
@@ -884,12 +894,90 @@ class AdminInterface {
       if (response.ok) {
         this.showToast('Display instellingen opgeslagen!');
         console.log('Display settings saved:', settingsData);
+        
+        // Update settings title after saving
+        this.updateSettingsTitle(organizationName);
       } else {
         throw new Error('Failed to save settings');
       }
     } catch (error) {
       console.error('Error saving settings:', error);
       this.showToast('Fout bij opslaan instellingen: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Update settings title based on organization name
+   */
+  updateSettingsTitle(organizationName) {
+    const orgName = organizationName?.trim() || 'CounterCast';
+    const title = `${orgName} Signage Instellingen`;
+    
+    // Update main settings title
+    const settingsTitle = document.getElementById('settingsTitle');
+    if (settingsTitle) {
+      settingsTitle.textContent = title;
+    }
+    
+    // Update dashboard settings title
+    const dashboardTitle = document.querySelector('.dashboard-settings-title');
+    if (dashboardTitle) {
+      dashboardTitle.textContent = title;
+    }
+    
+    console.log(`Settings title updated to: ${title}`);
+  }
+
+  /**
+   * Setup settings navigation for master-detail UI
+   */
+  setupSettingsNavigation() {
+    const navItems = document.querySelectorAll('.settings-nav-item');
+    
+    navItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const category = item.dataset.category;
+        this.switchSettingsCategory(category);
+      });
+    });
+  }
+
+  /**
+   * Switch to a different settings category
+   */
+  switchSettingsCategory(category) {
+    console.log(`Switching to settings category: ${category}`);
+    
+    // Update navigation active state
+    document.querySelectorAll('.settings-nav-item').forEach(item => {
+      item.classList.remove('active', 'bg-blue-100', 'dark:bg-blue-900', 'text-blue-700', 'dark:text-blue-300');
+      item.classList.add('text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
+    });
+    
+    const activeItem = document.querySelector(`[data-category="${category}"]`);
+    if (activeItem) {
+      activeItem.classList.add('active', 'bg-blue-100', 'dark:bg-blue-900', 'text-blue-700', 'dark:text-blue-300');
+      activeItem.classList.remove('text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
+    }
+    
+    // Hide all panels
+    document.querySelectorAll('.settings-detail-panel').forEach(panel => {
+      panel.classList.add('hidden');
+    });
+    
+    // Show selected panel
+    const targetPanel = document.getElementById(`settings-${category}`);
+    if (targetPanel) {
+      targetPanel.classList.remove('hidden');
+    }
+    
+    // Show/hide subcategories for footer
+    const footerSubcategories = document.querySelector('[data-category="footer"]').parentElement.querySelector('.space-y-1');
+    if (category === 'footer' && footerSubcategories) {
+      footerSubcategories.classList.remove('hidden');
+    } else if (footerSubcategories) {
+      footerSubcategories.classList.add('hidden');
     }
   }
 
@@ -1835,7 +1923,7 @@ class AdminInterface {
       if (product.is_new === true) badges.push('<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">✨ Nieuw</span>');
       
       return `
-        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <tr class="product-item hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" draggable="true" data-product-id="${product.id}" data-category-id="${product.category_id}">
           <td class="px-6 py-4 whitespace-nowrap">
             <input type="checkbox" class="product-checkbox rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-700" data-product-id="${product.id}">
           </td>
@@ -1881,6 +1969,9 @@ class AdminInterface {
         </tr>
       `;
     }).join('');
+    
+    // Re-initialize drag and drop for products after rendering
+    this.initializeProductDragAndDrop();
   }
 
   /**
