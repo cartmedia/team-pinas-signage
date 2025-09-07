@@ -28,6 +28,8 @@
   height: 8vh;
   margin-bottom: 3vh;
   animation: pulse 2s ease-in-out infinite;
+  /* Performance: Use transform for hardware acceleration */
+  will-change: transform;
 }
 
 .loading-text {
@@ -60,12 +62,14 @@
 }
 
 body {
-  /* Team Pinas Background with dark overlay */
+  /* Performance: Optimized background loading */
   background: linear-gradient(rgba(16, 16, 16, 0.6), rgba(16, 16, 16, 0.6)),
     url("/assets/images/background.jpg");
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
+  background-attachment: scroll; /* Performance: Fixed backgrounds cause repainting */
+  /* Performance: Use will-change for smooth animations */
+  will-change: transform;
   
   /* CSS Custom Properties for dynamic heights and logo */
   --header-height: 15vh;
@@ -456,21 +460,22 @@ hr {
   width: 100%;
 }
 
+/* Performance: Use transform3d for hardware acceleration */
 @keyframes scrollTextContinuous {
   0% {
-    transform: translateX(100%);
+    transform: translate3d(100%, 0, 0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
 @keyframes scrollTextDiscrete {
   0% {
-    transform: translateX(100%);
+    transform: translate3d(100%, 0, 0);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translate3d(-100%, 0, 0);
   }
 }
 
@@ -481,6 +486,9 @@ hr {
   will-change: transform;
   vertical-align: middle; /* Ensure proper vertical alignment */
   line-height: 1; /* Match footer line-height */
+  /* Performance: Use transform3d for hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Separator crown icon in footer */

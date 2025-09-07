@@ -4,15 +4,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CounterCast - Team Pinas</title>
+    
+    <!-- Performance: Preload critical resources -->
+    <link rel="preload" href="/src/styles/MenuSignage.css" as="style" />
+    <link rel="preload" href="https://use.typekit.net/iei5wpp.css" as="style" crossorigin />
+    <link rel="preload" href="assets/images/team-pinas-logo.svg" as="image" />
+    <link rel="preload" href="assets/images/pinas_kroon.svg" as="image" />
+    
+    <!-- Performance: DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://use.typekit.net" />
+    
     <link rel="stylesheet" href="/src/styles/MenuSignage.css" />
-    <link rel="stylesheet" href="https://use.typekit.net/iei5wpp.css" />
-    <!-- CMS Integration Scripts -->
-    <script src="/config/cms-config.js"></script>
-    <script src="/src/scripts/shared/smart-logo.js"></script>
-    <script src="/src/scripts/shared/logo-controls.js"></script>
-    <script src="/src/scripts/shared/cms-connector.js"></script>
-    <script src="/src/scripts/display/MenuSignage.js"></script>
+    <link rel="stylesheet" href="https://use.typekit.net/iei5wpp.css" media="print" onload="this.media='all'" />
+    <!-- Performance: Load critical scripts asynchronously -->
+    <script src="/config/cms-config.js" async></script>
+    <script src="/src/scripts/shared/smart-logo.js" defer></script>
+    <script src="/src/scripts/shared/logo-controls.js" defer></script>
+    <script src="/src/scripts/shared/cms-connector.js" defer></script>
+    <script src="/src/scripts/display/MenuSignage.js" defer></script>
+    
+    <!-- Performance monitoring (only in development) -->
     <script>
+      if (window.location.hostname === 'localhost' || window.location.hostname.includes('netlify')) {
+        const script = document.createElement('script');
+        script.src = '/performance-monitor.js';
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+    </script>
+    <script>
+      // Register Service Worker for performance
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('Service Worker registered:', registration);
+          })
+          .catch((error) => {
+            console.log('Service Worker registration failed:', error);
+          });
+      }
+      
       // Load dynamic loading text immediately when DOM is ready
       (async function() {
         try {

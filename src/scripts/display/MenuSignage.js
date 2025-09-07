@@ -223,6 +223,14 @@ document.addEventListener("DOMContentLoaded", function () {
   const PRIMARY_SLOT = SLOTS[0]; // Now points to slot 1
   let ROTATE_INTERVAL_MS = 6000; // Default, will be updated from settings
   
+  // Performance: Cache DOM elements
+  const categorySlots = {
+    slot0: document.querySelector(".CategorySlot[data-slot='0']"),
+    slot1: document.querySelector(".CategorySlot[data-slot='1']"),
+    slot2: document.querySelector(".CategorySlot[data-slot='2']"),
+    slot3: document.querySelector(".CategorySlot[data-slot='3']")
+  };
+  
   // Load settings and products in parallel for faster initialization
   const initPromises = [
     displaySettings.loadSettings().then(() => {
@@ -263,36 +271,76 @@ document.addEventListener("DOMContentLoaded", function () {
     return String(value);
   }
 
+  // Performance: Use cached DOM elements and DocumentFragment
   function renderCategory(slotSelector, category, itemsOverride) {
+    const slotElement = slotSelector.startsWith('.') ? 
+      categorySlots[slotSelector.replace(/\W/g, '')] || document.querySelector(slotSelector) :
+      document.querySelector(slotSelector);
+      
     if (!category) {
-      document.querySelector(slotSelector).innerHTML = "";
+      if (slotElement) slotElement.innerHTML = "";
       return;
     }
-    const titleHtml = `<div class="CategoryTitle">${category.title}</div><hr />`;
-    let itemsHtml = '<div class="MenuItemsContainer">';
+    // Performance: Use DocumentFragment for better DOM performance
+    const fragment = document.createDocumentFragment();
+    
+    // Create title
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'CategoryTitle';
+    titleDiv.textContent = category.title;
+    fragment.appendChild(titleDiv);
+    
+    const hr = document.createElement('hr');
+    fragment.appendChild(hr);
+    
+    // Create container
+    const container = document.createElement('div');
+    container.className = 'MenuItemsContainer';
+    
     const list = Array.isArray(itemsOverride) ? itemsOverride : (category.items || []);
     list.forEach((it) => {
-      // CSS classes for special styling
-      const specialClasses = [];
-      if (it.on_sale) specialClasses.push('on-sale');
-      if (it.is_new) specialClasses.push('is-new');
-      const itemClass = specialClasses.length > 0 ? ` ${specialClasses.join(' ')}` : '';
+      // Performance: Create DOM elements directly instead of innerHTML
+      const menuItem = document.createElement('div');
+      menuItem.className = 'MenuItem';
       
-      // Badge elements
-      const badges = [];
-      if (it.on_sale) badges.push('<span class="sale-badge">Aanbieding</span>');
-      if (it.is_new) badges.push('<span class="new-badge">Nieuw</span>');
-      const badgesHtml = badges.join('');
+      // Apply special styling classes
+      if (it.on_sale) menuItem.classList.add('on-sale');
+      if (it.is_new) menuItem.classList.add('is-new');
       
-      itemsHtml += `
-        <div class="MenuItem${itemClass}">
-          <div class="MenuItemType">${cleanName(it.name)}${badgesHtml}</div>
-          <div class="MenuFoodItem">${euro(it.price)}</div>
-        </div>
-      `;
+      // Create item type element
+      const itemType = document.createElement('div');
+      itemType.className = 'MenuItemType';
+      itemType.textContent = cleanName(it.name);
+      
+      // Add badges
+      if (it.on_sale) {
+        const saleBadge = document.createElement('span');
+        saleBadge.className = 'sale-badge';
+        saleBadge.textContent = 'Aanbieding';
+        itemType.appendChild(saleBadge);
+      }
+      if (it.is_new) {
+        const newBadge = document.createElement('span');
+        newBadge.className = 'new-badge';
+        newBadge.textContent = 'Nieuw';
+        itemType.appendChild(newBadge);
+      }
+      
+      // Create price element
+      const priceElement = document.createElement('div');
+      priceElement.className = 'MenuFoodItem';
+      priceElement.textContent = euro(it.price);
+      
+      menuItem.appendChild(itemType);
+      menuItem.appendChild(priceElement);
+      container.appendChild(menuItem);
     });
-    itemsHtml += "</div>";
-    document.querySelector(slotSelector).innerHTML = titleHtml + itemsHtml;
+    
+    fragment.appendChild(container);
+    if (slotElement) {
+      slotElement.innerHTML = ''; // Clear first
+      slotElement.appendChild(fragment); // Single DOM update
+    }
   }
 
   function chunk(array, size) {

@@ -3,12 +3,23 @@
 
 const { Pool } = require('pg');
 
-// Initialize Neon connection
+// Performance: Cache for 5 minutes
+let cachedResponse = null;
+let cacheExpiry = 0;
+
+// Performance: Optimized connection pool configuration
 const pool = new Pool({
   connectionString: process.env.NEON_DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  // Performance optimizations
+  max: 10, // Maximum connections in pool
+  min: 2,  // Minimum connections to maintain
+  idleTimeoutMillis: 30000, // Close idle connections after 30s
+  connectionTimeoutMillis: 10000, // Timeout connection attempts after 10s
+  query_timeout: 5000, // Timeout queries after 5s
+  statement_timeout: 5000 // Timeout statements after 5s
 });
 
 exports.handler = async (event, context) => {
@@ -39,6 +50,20 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    // Performance: Check cache first
+    const now = Date.now();
+    if (cachedResponse && now < cacheExpiry) {
+      console.log('Returning cached products data');
+      return {
+        statusCode: 200,
+        headers: {
+          ...headers,
+          'Cache-Control': 'public, max-age=300' // 5 minutes
+        },
+        body: JSON.stringify(cachedResponse)
+      };
+    }
+    
     const client = await pool.connect();
     
     try {
@@ -87,10 +112,18 @@ exports.handler = async (event, context) => {
         lastUpdated: new Date().toISOString(),
         source: 'neon-database'
       };
+      
+      // Performance: Cache successful responses
+      cachedResponse = response;
+      cacheExpiry = now + (5 * 60 * 1000); // 5 minutes
 
       return {
         statusCode: 200,
-        headers,
+        headers: {
+          ...headers,
+          'Cache-Control': 'public, max-age=300', // 5 minutes
+          'ETag': `"${Buffer.from(JSON.stringify(response)).toString('base64')}"` // Simple ETag
+        },
         body: JSON.stringify(response)
       };
 
