@@ -494,7 +494,8 @@ hr {
 /* Separator crown icon in footer */
 .ScrollingText img.sep {
   height: 2.6vh; /* slightly smaller than text height */
-  vertical-align: middle;
+  vertical-align: baseline;
+  transform: translateY(-0.1vh); /* Fine-tune vertical position */
   margin: 0 1.5vh;
   opacity: 0.9;
 }
