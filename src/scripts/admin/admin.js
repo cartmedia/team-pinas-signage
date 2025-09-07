@@ -853,6 +853,12 @@ class AdminInterface {
         // Load footer text lines
         this.loadFooterTextLines(data.settings.footer_text);
         
+        // Load footer color settings
+        const footerTextColor = document.getElementById('footerTextColor');
+        if (footerTextColor) {
+          footerTextColor.value = data.settings.footer_text_color || 'dark';
+        }
+        
         console.log('Settings loaded:', data.settings);
       }
     } catch (error) {
@@ -874,6 +880,9 @@ class AdminInterface {
       
       // Collect footer text lines from dynamic inputs
       const footerText = this.collectFooterTextLines();
+      
+      // Get footer color settings if available
+      const colorSettings = window.getFooterColorSettings ? window.getFooterColorSettings() : {};
 
       const settingsData = {
         display_columns: parseInt(displayColumns),
@@ -883,7 +892,11 @@ class AdminInterface {
         footer_text: footerText,
         footer_speed: parseInt(footerSpeed),
         footer_continuous: footerContinuous,
-        organization_name: organizationName
+        organization_name: organizationName,
+        // Include basic text color setting
+        footer_text_color: document.getElementById('footerTextColor')?.value || 'dark',
+        // Include advanced color settings
+        ...colorSettings
       };
 
       const response = await this.apiCall('/.netlify/functions/settings', {

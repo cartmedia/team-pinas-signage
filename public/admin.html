@@ -1676,7 +1676,117 @@
                     }
                 });
             }
+            
+            // Initialize Footer Color Picker functionality
+            initFooterColorPickers();
         });
+        
+        function initFooterColorPickers() {
+            // Get all the color picker elements
+            const footerBgColor = document.getElementById('footerBgColor');
+            const footerBgColorHex = document.getElementById('footerBgColorHex');
+            const footerTextColorCustom = document.getElementById('footerTextColorCustom');
+            const footerTextColorCustomHex = document.getElementById('footerTextColorCustomHex');
+            const footerColorPreview = document.getElementById('footerColorPreview');
+            
+            // Only initialize if elements exist
+            if (!footerBgColor || !footerBgColorHex || !footerTextColorCustom || !footerTextColorCustomHex || !footerColorPreview) {
+                return;
+            }
+            
+            // Sync color picker with hex input - Background Color
+            footerBgColor.addEventListener('input', (e) => {
+                footerBgColorHex.value = e.target.value;
+                updatePreview();
+            });
+            
+            footerBgColorHex.addEventListener('input', (e) => {
+                const hex = e.target.value;
+                if (isValidHex(hex)) {
+                    footerBgColor.value = hex;
+                    updatePreview();
+                }
+            });
+            
+            // Sync color picker with hex input - Text Color
+            footerTextColorCustom.addEventListener('input', (e) => {
+                footerTextColorCustomHex.value = e.target.value;
+                updatePreview();
+            });
+            
+            footerTextColorCustomHex.addEventListener('input', (e) => {
+                const hex = e.target.value;
+                if (isValidHex(hex)) {
+                    footerTextColorCustom.value = hex;
+                    updatePreview();
+                }
+            });
+            
+            // Update live preview
+            function updatePreview() {
+                const bgColor = footerBgColorHex.value || '#000000';
+                const textColor = footerTextColorCustomHex.value || '#ffffff';
+                
+                footerColorPreview.style.backgroundColor = bgColor;
+                footerColorPreview.style.color = textColor;
+            }
+            
+            // Validate hex color
+            function isValidHex(hex) {
+                return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex);
+            }
+            
+            // Load current settings when page loads
+            if (typeof window.loadSettings === 'function') {
+                // Hook into existing loadSettings if it exists
+                const originalLoadSettings = window.loadSettings;
+                window.loadSettings = async function() {
+                    const result = await originalLoadSettings.apply(this, arguments);
+                    loadColorSettings();
+                    return result;
+                };
+            } else {
+                // Load color settings independently
+                setTimeout(loadColorSettings, 1000);
+            }
+            
+            async function loadColorSettings() {
+                try {
+                    const response = await fetch('/.netlify/functions/settings');
+                    if (response.ok) {
+                        const data = await response.json();
+                        const settings = data.settings || {};
+                        
+                        // Load footer background color
+                        if (settings.footer_bg_color) {
+                            footerBgColor.value = settings.footer_bg_color;
+                            footerBgColorHex.value = settings.footer_bg_color;
+                        }
+                        
+                        // Load custom text color
+                        if (settings.footer_text_color_custom) {
+                            footerTextColorCustom.value = settings.footer_text_color_custom;
+                            footerTextColorCustomHex.value = settings.footer_text_color_custom;
+                        }
+                        
+                        updatePreview();
+                    }
+                } catch (error) {
+                    console.warn('Failed to load color settings:', error);
+                }
+            }
+            
+            // Save settings integration
+            function getColorSettings() {
+                return {
+                    footer_bg_color: footerBgColorHex.value,
+                    footer_text_color_custom: footerTextColorCustomHex.value
+                };
+            }
+            
+            // Make color settings available globally for save function integration
+            window.getFooterColorSettings = getColorSettings;
+        }
     </script>
 </body>
 </html>
