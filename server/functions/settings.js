@@ -113,7 +113,10 @@ async function updateSettings(client, headers, data) {
     footer_speed, 
     footer_continuous,
     organization_name,
-    rotation_interval
+    rotation_interval,
+    footer_text_color,
+    footer_bg_color,
+    footer_text_color_custom
   } = data;
   
   const updates = [
@@ -124,7 +127,10 @@ async function updateSettings(client, headers, data) {
     { key: 'footer_speed', value: footer_speed, type: 'number' },
     { key: 'footer_continuous', value: footer_continuous, type: 'boolean' },
     { key: 'organization_name', value: organization_name, type: 'string' },
-    { key: 'rotation_interval', value: rotation_interval, type: 'number' }
+    { key: 'rotation_interval', value: rotation_interval, type: 'number' },
+    { key: 'footer_text_color', value: footer_text_color, type: 'string' },
+    { key: 'footer_bg_color', value: footer_bg_color, type: 'string' },
+    { key: 'footer_text_color_custom', value: footer_text_color_custom, type: 'string' }
   ];
 
   // Update or insert each setting
