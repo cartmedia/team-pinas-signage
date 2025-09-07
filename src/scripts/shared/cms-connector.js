@@ -3,7 +3,11 @@
 
 class CMSConnector {
   constructor(config) {
-    this.config = config || window.CMS_CONFIG;
+    this.config = config || window.CMS_CONFIG || {
+      cache: { enabled: true, duration: 300000 },
+      api: { baseUrl: '/.netlify/functions', timeout: 10000 },
+      retries: { max: 3, delay: 1000 }
+    };
     this.cache = new Map();
     this.retryCount = 0;
     this.isOnline = navigator.onLine;
