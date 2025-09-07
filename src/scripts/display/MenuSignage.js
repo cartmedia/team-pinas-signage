@@ -798,11 +798,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Show footer with loading state initially, then load settings
+  // Show footer immediately with fallback content, then load settings
   const footerContainer = document.querySelector('.Footer');
   if (footerContainer) {
-    footerContainer.style.display = 'none'; // Start hidden, but load quickly
-    console.log('🔄 Footer initialized, loading settings...');
+    // Start visible for instant display
+    footerContainer.style.display = 'block'; 
+    console.log('✨ Footer shown immediately, loading settings...');
+    
+    // Add fallback content immediately if footer is empty
+    const scrollingTextSpan = footerContainer.querySelector('.ScrollingText span');
+    if (scrollingTextSpan && !scrollingTextSpan.innerHTML.trim()) {
+      scrollingTextSpan.innerHTML = 'Team Pinas - Verse maaltijden voor iedereen <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> Investeer in jezelf - personal training vanaf €37,50 per les';
+      console.log('🚀 Fallback footer content added for instant display');
+    }
   }
 
   // Fast settings loading with immediate check and timeout fallback
