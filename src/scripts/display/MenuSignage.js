@@ -805,12 +805,8 @@ document.addEventListener("DOMContentLoaded", function () {
     footerContainer.style.display = 'block'; 
     console.log('✨ Footer shown immediately, loading settings...');
     
-    // Add fallback content immediately if footer is empty
-    const scrollingTextSpan = footerContainer.querySelector('.ScrollingText span');
-    if (scrollingTextSpan && !scrollingTextSpan.innerHTML.trim()) {
-      scrollingTextSpan.innerHTML = 'Team Pinas - Verse maaltijden voor iedereen <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> Investeer in jezelf - personal training vanaf €37,50 per les';
-      console.log('🚀 Fallback footer content added for instant display');
-    }
+    // Footer content is now directly in HTML, no need for fallback JavaScript
+    console.log('✨ Footer starts with HTML content, will be replaced by database content when loaded');
   }
 
   // Fast settings loading with immediate check and timeout fallback
