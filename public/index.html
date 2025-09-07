@@ -13,8 +13,8 @@
     <script src="/src/scripts/shared/cms-connector.js"></script>
     <script src="/src/scripts/display/MenuSignage.js"></script>
     <script>
-      // Load dynamic loading text from version.json and settings
-      document.addEventListener('DOMContentLoaded', async function() {
+      // Load dynamic loading text immediately when DOM is ready
+      (async function() {
         try {
           // Load version info
           const versionResponse = await fetch('/version.json');
@@ -33,16 +33,30 @@
             organizationName = versionData.brandName || organizationName;
           }
           
-          // Update loading text
-          const loadingTextEl = document.getElementById('loadingText');
-          if (loadingTextEl && versionData.loadingText) {
-            const customLoadingText = versionData.loadingText.replace('{organisatieName}', organizationName);
-            loadingTextEl.textContent = customLoadingText;
+          // Update loading text when DOM is ready
+          function updateLoadingText() {
+            const loadingTextEl = document.getElementById('loadingText');
+            if (loadingTextEl && versionData.loadingText) {
+              const customLoadingText = versionData.loadingText.replace('{organisatieName}', organizationName);
+              loadingTextEl.textContent = customLoadingText;
+              console.log(`Loading text updated to: ${customLoadingText}`);
+            } else {
+              // Retry after a short delay if element not found
+              setTimeout(updateLoadingText, 100);
+            }
           }
+          
+          // Try to update immediately if DOM is already loaded
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateLoadingText);
+          } else {
+            updateLoadingText();
+          }
+          
         } catch (error) {
           console.log('Could not load dynamic loading text, keeping default');
         }
-      });
+      })();
     </script>
   </head>
   <body>
