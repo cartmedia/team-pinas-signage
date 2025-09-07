@@ -891,6 +891,7 @@
                                             <option value="auto">Automatisch (past zich aan)</option>
                                             <option value="dark" selected>Donker (zwarte tekst)</option>
                                             <option value="light">Licht (witte tekst)</option>
+                                            <option value="custom">Custom (zie Branding → Footer Styling)</option>
                                         </select>
                                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                             Voor meer geavanceerde kleurinstellingen, zie Branding → Footer Styling
@@ -908,9 +909,78 @@
                             </div>
                             
                             <div class="space-y-6">
+                                <!-- Footer Styling Section -->
+                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i class="fas fa-palette mr-2 text-indigo-500"></i>
+                                        Footer Styling (Geavanceerd)
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <!-- Footer Background Color -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Footer Achtergrondkleur
+                                            </label>
+                                            <div class="flex items-center space-x-2">
+                                                <input 
+                                                    type="color" 
+                                                    id="footerBgColor" 
+                                                    class="w-12 h-10 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
+                                                    value="#000000"
+                                                    title="Kies footer achtergrondkleur"
+                                                >
+                                                <input 
+                                                    type="text" 
+                                                    id="footerBgColorHex" 
+                                                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md text-sm font-mono"
+                                                    placeholder="#000000"
+                                                    maxlength="7"
+                                                >
+                                            </div>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Klik op de kleur of typ een hex code</p>
+                                        </div>
+                                        
+                                        <!-- Footer Text Color Custom -->
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Footer Tekstkleur (Custom)
+                                            </label>
+                                            <div class="flex items-center space-x-2">
+                                                <input 
+                                                    type="color" 
+                                                    id="footerTextColorCustom" 
+                                                    class="w-12 h-10 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
+                                                    value="#ffffff"
+                                                    title="Kies footer tekstkleur"
+                                                >
+                                                <input 
+                                                    type="text" 
+                                                    id="footerTextColorCustomHex" 
+                                                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md text-sm font-mono"
+                                                    placeholder="#ffffff"
+                                                    maxlength="7"
+                                                >
+                                            </div>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Alleen actief bij "Custom" tekstkleur instelling</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Preview Section -->
+                                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Live Voorbeeld
+                                        </label>
+                                        <div id="footerColorPreview" class="px-4 py-2 rounded border text-center text-sm font-medium" 
+                                             style="background-color: #000000; color: #ffffff;">
+                                            Team Pinas - Verse maaltijden voor iedereen
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- More branding settings placeholder -->
                                 <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                                     <i class="fas fa-paint-brush text-4xl mb-3"></i>
-                                    <p>Branding instellingen komen binnenkort beschikbaar</p>
+                                    <p>Andere branding instellingen komen binnenkort beschikbaar</p>
                                 </div>
                             </div>
                         </div>
