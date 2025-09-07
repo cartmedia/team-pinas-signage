@@ -765,7 +765,17 @@ document.addEventListener("DOMContentLoaded", function () {
       
       // Apply footer text color setting
       if (displaySettings.applyFooterTextColor) {
+        console.log(`🔄 About to apply footer text color: ${footerTextColor}`);
         displaySettings.applyFooterTextColor(footerTextColor);
+        
+        // Double-check that it was applied
+        setTimeout(() => {
+          const footer = document.querySelector('.SignageFooter');
+          if (footer) {
+            console.log(`🔍 Footer classes after application: ${footer.className}`);
+            console.log(`🔍 Footer computed color: ${getComputedStyle(footer).color}`);
+          }
+        }, 100);
       }
       
       // Only show footer if we have actual content from database
