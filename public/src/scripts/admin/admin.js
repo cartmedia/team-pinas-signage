@@ -95,30 +95,6 @@ class AdminInterface {
       this.saveDisplaySettings();
     });
 
-    // Footer management handlers
-    safeAddEventListener('saveFooterConfig', 'click', () => {
-      this.saveFooterConfig();
-    });
-    
-    safeAddEventListener('saveFooterSettings', 'click', () => {
-      this.saveFooterConfig();
-    });
-
-    safeAddEventListener('loadFooterConfig', 'click', () => {
-      this.loadFooterConfig();
-    });
-
-    // Footer preview handlers
-    const footerInputs = ['footerText', 'footerTextColor', 'footerFontSize'];
-    footerInputs.forEach(inputId => {
-      const input = document.getElementById(inputId);
-      if (input) {
-        input.addEventListener('input', () => {
-          this.updateFooterPreview();
-        });
-      }
-    });
-
     // Settings navigation handlers
     this.setupSettingsNavigation();
 
@@ -943,152 +919,6 @@ class AdminInterface {
     }
   }
 
-  // Footer Management Methods
-  async loadFooterConfig() {
-    try {
-      console.log('Loading footer configuration...');
-      const response = await this.apiCall('/.netlify/functions/footer');
-      
-      if (response.ok) {
-        const footerData = await response.json();
-        this.populateFooterForm(footerData);
-        console.log('Footer configuration loaded:', footerData);
-      } else if (response.status === 404) {
-        console.log('No active footer configuration found');
-        this.clearFooterForm();
-      } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error('Error loading footer config:', error);
-      this.showToast('Fout bij laden footer configuratie: ' + error.message, 'error');
-    }
-  }
-
-  populateFooterForm(footerData) {
-    // Populate footer form fields
-    const footerTextEl = document.getElementById('footerText');
-    const textColorEl = document.getElementById('footerTextColor');
-    const backgroundColorEl = document.getElementById('footerBackgroundColor');
-    const scrollSpeedEl = document.getElementById('footerScrollSpeed');
-    const scrollDirectionEl = document.getElementById('footerScrollDirection');
-    const dividerImageEl = document.getElementById('footerDividerImage');
-    const fontSizeEl = document.getElementById('footerFontSize');
-
-    if (footerTextEl) footerTextEl.value = footerData.footer_text || '';
-    if (textColorEl) textColorEl.value = footerData.text_color || '#101010';
-    if (backgroundColorEl) backgroundColorEl.value = footerData.background_color || '';
-    if (scrollSpeedEl) scrollSpeedEl.value = footerData.scroll_speed || 30;
-    if (scrollDirectionEl) scrollDirectionEl.value = footerData.scroll_direction || 'left';
-    if (dividerImageEl) dividerImageEl.value = footerData.divider_image || 'assets/images/pinas_kroon.svg';
-    if (fontSizeEl) fontSizeEl.value = footerData.font_size || '3vh';
-
-    // Update preview if available
-    this.updateFooterPreview();
-  }
-
-  clearFooterForm() {
-    // Clear all footer form fields
-    const formFields = [
-      'footerText', 'footerTextColor', 'footerBackgroundColor', 
-      'footerScrollSpeed', 'footerScrollDirection', 'footerDividerImage', 'footerFontSize'
-    ];
-    
-    formFields.forEach(fieldId => {
-      const field = document.getElementById(fieldId);
-      if (field) field.value = '';
-    });
-
-    // Set defaults
-    const textColorEl = document.getElementById('footerTextColor');
-    const scrollSpeedEl = document.getElementById('footerScrollSpeed');
-    const scrollDirectionEl = document.getElementById('footerScrollDirection');
-    const dividerImageEl = document.getElementById('footerDividerImage');
-    const fontSizeEl = document.getElementById('footerFontSize');
-
-    if (textColorEl) textColorEl.value = '#101010';
-    if (scrollSpeedEl) scrollSpeedEl.value = '30';
-    if (scrollDirectionEl) scrollDirectionEl.value = 'left';
-    if (dividerImageEl) dividerImageEl.value = 'assets/images/pinas_kroon.svg';
-    if (fontSizeEl) fontSizeEl.value = '3vh';
-  }
-
-  async saveFooterConfig() {
-    try {
-      // Get form values
-      const footerText = document.getElementById('footerText')?.value?.trim();
-      const textColor = document.getElementById('footerTextColor')?.value;
-      const backgroundColor = document.getElementById('footerBackgroundColor')?.value;
-      const scrollSpeed = document.getElementById('footerScrollSpeed')?.value;
-      const scrollDirection = document.getElementById('footerScrollDirection')?.value;
-      const dividerImage = document.getElementById('footerDividerImage')?.value;
-      const fontSize = document.getElementById('footerFontSize')?.value;
-
-      // Validate required fields
-      if (!footerText) {
-        this.showToast('Footer tekst is verplicht', 'error');
-        return;
-      }
-
-      const footerData = {
-        footer_text: footerText,
-        text_color: textColor || '#101010',
-        background_color: backgroundColor || null,
-        scroll_speed: parseInt(scrollSpeed) || 30,
-        scroll_direction: scrollDirection || 'left',
-        divider_image: dividerImage || 'assets/images/pinas_kroon.svg',
-        font_size: fontSize || '3vh'
-      };
-
-      console.log('Saving footer configuration:', footerData);
-
-      // Try to update first, then create if not found
-      let response = await this.apiCall('/.netlify/functions/footer', {
-        method: 'PUT',
-        body: JSON.stringify(footerData)
-      });
-
-      if (response.status === 404) {
-        // No active config exists, create new one
-        response = await this.apiCall('/.netlify/functions/footer', {
-          method: 'POST',
-          body: JSON.stringify(footerData)
-        });
-      }
-
-      if (response.ok) {
-        const result = await response.json();
-        this.showToast('Footer configuratie opgeslagen!');
-        console.log('Footer configuration saved:', result);
-        
-        // Reload the configuration to show updated data
-        await this.loadFooterConfig();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save footer configuration');
-      }
-    } catch (error) {
-      console.error('Error saving footer config:', error);
-      this.showToast('Fout bij opslaan footer configuratie: ' + error.message, 'error');
-    }
-  }
-
-  updateFooterPreview() {
-    // Simple preview update - could be enhanced
-    const previewEl = document.getElementById('footerPreview');
-    if (!previewEl) return;
-
-    const footerText = document.getElementById('footerText')?.value || '';
-    const textColor = document.getElementById('footerTextColor')?.value || '#101010';
-    const fontSize = document.getElementById('footerFontSize')?.value || '3vh';
-
-    previewEl.innerHTML = `
-      <div style="color: ${textColor}; font-size: ${fontSize}; padding: 10px; background: #f5f5f5; border-radius: 4px; overflow: hidden; white-space: nowrap;">
-        ${footerText.replace('<separator>', ' | ')}
-      </div>
-    `;
-  }
-
   /**
    * Update settings title based on organization name
    */
@@ -1155,12 +985,10 @@ class AdminInterface {
       targetPanel.classList.remove('hidden');
     }
     
-    // Show/hide subcategories for footer and load footer config
+    // Show/hide subcategories for footer
     const footerSubcategories = document.querySelector('[data-category="footer"]').parentElement.querySelector('.space-y-1');
     if (category === 'footer' && footerSubcategories) {
       footerSubcategories.classList.remove('hidden');
-      // Load footer configuration when switching to footer settings
-      this.loadFooterConfig();
     } else if (footerSubcategories) {
       footerSubcategories.classList.add('hidden');
     }
@@ -1852,9 +1680,8 @@ class AdminInterface {
         this.renderProducts();
         break;
       case 'settings':
-        // Reload display settings and footer configuration
+        // Reload display settings
         this.loadDisplaySettings();
-        this.loadFooterConfig();
         break;
     }
   }

@@ -479,6 +479,13 @@ hr {
   }
 }
 
+.ScrollingText {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
 .ScrollingText span {
   display: inline-block;
   animation: scrollText 30s linear infinite; /* default duration; JS will adjust */

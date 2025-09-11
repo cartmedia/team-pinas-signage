@@ -1,4 +1,54 @@
+// Debug Mode Implementation - check if debug is enabled
+let debugMode = localStorage.getItem('debugMode') === 'true';
+let originalConsole = {
+  log: console.log,
+  warn: console.warn,
+  error: console.error,
+  info: console.info,
+  debug: console.debug
+};
+
+// Apply debug mode on page load
+if (!debugMode) {
+  console.log = () => {};
+  console.warn = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+  // Keep console.error for critical issues
+}
+
+// Hide loading screen when menu data is ready
+function hideLoadingScreenWhenReady() {
+  console.log('🚀 Menu data loaded successfully - hiding loading screen');
+  
+  // Clean timeout: Hide loading screen quickly but show loading animation briefly
+  setTimeout(() => {
+    hideLoadingScreen();
+  }, 500); // Half second to show loading animation
+}
+
+// Actually hide the loading screen with animation
+function hideLoadingScreen() {
+  console.log('🎯 hideLoadingScreen called');
+  const loadingScreen = document.getElementById('loadingScreen');
+  console.log('Loading screen element found:', loadingScreen ? 'YES' : 'NO');
+  if (loadingScreen) {
+    console.log('Adding fade-out class...');
+    loadingScreen.classList.add('fade-out');
+    setTimeout(() => {
+      if (loadingScreen && loadingScreen.parentNode) {
+        console.log('Removing loading screen element...');
+        loadingScreen.remove();
+      }
+      console.log('🚀 Loading screen hidden - menu ready!');
+    }, 500);
+  } else {
+    console.warn('⚠️ Loading screen element not found - cannot hide');
+  }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
+
   // Getting the span element
   var dayTitleSpan = document.getElementById("DayTitle");
 
@@ -15,8 +65,8 @@ document.addEventListener("DOMContentLoaded", function () {
   var currentDate = new Date();
   var currentDayName = days[currentDate.getDay()];
 
-  // Setting the text (Team Pinas branding)
-  dayTitleSpan.textContent = "Team Pinas — " + currentDayName + " Menu";
+  // Setting the text (CounterCast branding)
+  dayTitleSpan.textContent = "CounterCast — " + currentDayName + " Menu";
 
   // Live clock (Dutch locale)
   const clockEl = document.getElementById("Clock");
@@ -46,26 +96,18 @@ document.addEventListener("DOMContentLoaded", function () {
 class DisplaySettings {
   constructor() {
     this.settings = {};
-    this.loaded = false;
+    // Settings will be loaded via loadAllData() for better performance
   }
 
-  async loadSettings() {
+  // Apply settings from loadAllData() 
+  applySettings(settingsData) {
     try {
-      // Try to load from CMS settings API
-      const response = await fetch('/.netlify/functions/settings');
-      if (response.ok) {
-        const data = await response.json();
-        this.settings = data.settings || {};
-      } else {
-        // Fallback to defaults
-        this.settings = {
-          display_columns: 2,
-          rotation_interval: 6000
-        };
-      }
+      console.log('⚙️ Applying settings from concurrent load...');
+      this.settings = settingsData.settings || {};
+      console.log('✅ Settings applied successfully');
     } catch (error) {
-      console.error('Failed to load settings:', error);
-      // Use defaults on error
+      console.warn('⚠️ Settings application failed, using defaults:', error.message);
+      // Use defaults on error  
       this.settings = {
         display_columns: 2,
         rotation_interval: 6000
@@ -74,7 +116,6 @@ class DisplaySettings {
     
     // Apply column layout
     this.applyColumnLayout();
-    this.loaded = true;
   }
 
   applyColumnLayout() {
@@ -96,6 +137,7 @@ class DisplaySettings {
     const headerHeight = parseInt(this.settings.header_height) || 15;
     const footerHeight = parseFloat(this.settings.footer_height) || 7.8; // Match CSS default
     const logoSize = parseInt(this.settings.logo_size) || 36; // Match CSS default
+    const footerTextColor = this.settings.footer_text_color || 'dark'; // Default to dark text
     
     // Set CSS custom properties on body element
     document.body.style.setProperty('--header-height', `${headerHeight}vh`);
@@ -103,7 +145,29 @@ class DisplaySettings {
     document.body.style.setProperty('--logo-size', `${logoSize}vh`);
     document.body.style.setProperty('--body-height', `calc(100vh - ${headerHeight}vh - ${footerHeight}vh)`);
     
-    console.log(`Applied header: ${headerHeight}vh, footer: ${footerHeight}vh, logo: ${logoSize}vh`);
+    // Apply footer text color
+    this.applyFooterTextColor(footerTextColor);
+    
+    console.log(`Applied header: ${headerHeight}vh, footer: ${footerHeight}vh, logo: ${logoSize}vh, footer text: ${footerTextColor}`);
+  }
+
+  applyFooterTextColor(colorMode) {
+    const footerContainer = document.querySelector('.SignageFooter');
+    if (!footerContainer) return;
+    
+    // Remove existing color classes
+    footerContainer.classList.remove('footer-light', 'footer-dark');
+    
+    // Apply new color class and CSS custom property
+    if (colorMode === 'light') {
+      footerContainer.classList.add('footer-light');
+      document.body.style.setProperty('--footer-text-color', '#ffffff');
+      console.log('🎨 Applied light footer text color');
+    } else {
+      footerContainer.classList.add('footer-dark');
+      document.body.style.setProperty('--footer-text-color', '#101010');
+      console.log('🎨 Applied dark footer text color');
+    }
   }
 
   getColumnCount() {
@@ -111,23 +175,50 @@ class DisplaySettings {
   }
 }
 
-// Initialize display settings globally
+// Initialize display settings
 const displaySettings = new DisplaySettings();
 
-// Main initialization function
-async function initializeSignage() {
+// Products rendering and rotation
+document.addEventListener("DOMContentLoaded", function () {
+  // SAFETY TIMEOUT: Always hide loading screen after 2 seconds maximum
+  setTimeout(() => {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen && !loadingScreen.classList.contains('fade-out')) {
+      console.log('⏰ Safety timeout: Force hiding loading screen after 2 seconds');
+      hideLoadingScreen();
+    }
+  }, 2000);
   const SLOTS = [".CategorySlot[data-slot='1']", ".CategorySlot[data-slot='2']", ".CategorySlot[data-slot='3']", ".CategorySlot[data-slot='0']"];
   const PRIMARY_SLOT = SLOTS[0]; // Now points to slot 1
   let ROTATE_INTERVAL_MS = 6000; // Default, will be updated from settings
   
-  // Load settings first and wait for completion
-  console.log('Loading display settings...');
-  await displaySettings.loadSettings();
+  // Performance: Cache DOM elements
+  const categorySlots = {
+    slot0: document.querySelector(".CategorySlot[data-slot='0']"),
+    slot1: document.querySelector(".CategorySlot[data-slot='1']"),
+    slot2: document.querySelector(".CategorySlot[data-slot='2']"),
+    slot3: document.querySelector(".CategorySlot[data-slot='3']")
+  };
   
-  // Update rotation interval from settings
-  ROTATE_INTERVAL_MS = parseInt(displaySettings.settings.rotation_interval) || 6000;
-  console.log(`Updated rotation interval to ${ROTATE_INTERVAL_MS}ms`);
+  // Load display settings for rotation timing
+  const loadDisplaySettings = async () => {
+    try {
+      const response = await fetch('/.netlify/functions/settings');
+      const data = await response.json();
+      const settings = data.settings || {};
+      
+      ROTATE_INTERVAL_MS = parseInt(settings.rotation_interval) || 6000;
+      console.log(`⚡ Rotation interval: ${ROTATE_INTERVAL_MS}ms`);
+    } catch (error) {
+      console.log('ℹ️ Using default rotation interval (6s)');
+      ROTATE_INTERVAL_MS = 6000;
+    }
+  };
   
+  // Load settings in background - don't block menu
+  loadDisplaySettings();
+  
+  console.log('🚀 Menu rendering starts immediately');
 
   // Strip technical prefixes from names (e.g., "A Cola" -> "Cola")
   function cleanName(name) {
@@ -154,51 +245,164 @@ async function initializeSignage() {
     return String(value);
   }
 
+  // Performance: Use cached DOM elements and DocumentFragment
   function renderCategory(slotSelector, category, itemsOverride) {
+    const slotElement = slotSelector.startsWith('.') ? 
+      categorySlots[slotSelector.replace(/\W/g, '')] || document.querySelector(slotSelector) :
+      document.querySelector(slotSelector);
+      
     if (!category) {
-      document.querySelector(slotSelector).innerHTML = "";
+      if (slotElement) slotElement.innerHTML = "";
       return;
     }
-    const titleHtml = `<div class="CategoryTitle">${category.title}</div><hr />`;
-    let itemsHtml = '<div class="MenuItemsContainer">';
+    // Performance: Use DocumentFragment for better DOM performance
+    const fragment = document.createDocumentFragment();
+    
+    // Create title
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'CategoryTitle';
+    titleDiv.textContent = category.title;
+    fragment.appendChild(titleDiv);
+    
+    const hr = document.createElement('hr');
+    fragment.appendChild(hr);
+    
+    // Create container
+    const container = document.createElement('div');
+    container.className = 'MenuItemsContainer';
+    
     const list = Array.isArray(itemsOverride) ? itemsOverride : (category.items || []);
     list.forEach((it) => {
-      itemsHtml += `
-        <div class="MenuItem">
-          <div class="MenuItemType">${cleanName(it.name)}</div>
-          <div class="MenuFoodItem">${euro(it.price)}</div>
-        </div>
-      `;
+      // Performance: Create DOM elements directly instead of innerHTML
+      const menuItem = document.createElement('div');
+      menuItem.className = 'MenuItem';
+      
+      // Apply special styling classes
+      if (it.on_sale) menuItem.classList.add('on-sale');
+      if (it.is_new) menuItem.classList.add('is-new');
+      
+      // Create item type element
+      const itemType = document.createElement('div');
+      itemType.className = 'MenuItemType';
+      itemType.textContent = cleanName(it.name);
+      
+      // Add badges
+      if (it.on_sale) {
+        const saleBadge = document.createElement('span');
+        saleBadge.className = 'sale-badge';
+        saleBadge.textContent = 'Aanbieding';
+        itemType.appendChild(saleBadge);
+      }
+      if (it.is_new) {
+        const newBadge = document.createElement('span');
+        newBadge.className = 'new-badge';
+        newBadge.textContent = 'Nieuw';
+        itemType.appendChild(newBadge);
+      }
+      
+      // Create price element
+      const priceElement = document.createElement('div');
+      priceElement.className = 'MenuFoodItem';
+      priceElement.textContent = euro(it.price);
+      
+      menuItem.appendChild(itemType);
+      menuItem.appendChild(priceElement);
+      container.appendChild(menuItem);
     });
-    itemsHtml += "</div>";
-    document.querySelector(slotSelector).innerHTML = titleHtml + itemsHtml;
+    
+    fragment.appendChild(container);
+    if (slotElement) {
+      slotElement.innerHTML = ''; // Clear first
+      slotElement.appendChild(fragment); // Single DOM update
+    }
   }
 
-  function chunk(array, size) {
-    const out = [];
-    for (let i = 0; i < array.length; i += size) out.push(array.slice(i, i + size));
-    return out;
+  // Global functions to apply settings and footer from loadAllData()
+  function applySettings(settingsData) {
+    if (displaySettings && settingsData) {
+      displaySettings.applySettings(settingsData);
+    }
   }
 
-  // Initialize CMS connector
-  const cmsConnector = window.CMSConnector ? new window.CMSConnector() : null;
-  
-  // Load products from CMS or fallback to local JSON
-  const loadProducts = async () => {
-    if (cmsConnector) {
-      return await cmsConnector.getProducts();
-    } else {
-      // Fallback to original method if CMS connector not available
-      const response = await fetch("/assets/data/products.json");
-      return await response.json();
+  function applyFooterSettings(footerData) {
+    if (footerData && footerData.footer_text && footerData.footer_text.trim()) {
+      console.log('✅ Applying footer data from concurrent load...');
+      
+      // Map footer API response to display properties
+      footerSpeed = parseInt(footerData.scroll_speed) || 30;
+      footerText = footerData.footer_text.trim().replace('<separator>', '||');
+      footerContinuous = footerData.scroll_direction !== 'static';
+      
+      // Apply footer text color if provided
+      if (footerData.text_color) {
+        document.body.style.setProperty('--footer-text-color', footerData.text_color);
+        console.log(`🎨 Applied footer text color: ${footerData.text_color}`);
+      }
+      
+      // Apply footer background color if provided
+      if (footerData.background_color) {
+        document.body.style.setProperty('--footer-bg-color', footerData.background_color);
+        console.log(`🎨 Applied footer background color: ${footerData.background_color}`);
+      }
+      
+      // Update footer content
+      const scrollingTextSpan = document.querySelector('.ScrollingText span');
+      if (scrollingTextSpan) {
+        // Replace separator with image tags for proper display
+        const formattedText = footerText.replace(/\|\|/g, 
+          ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ');
+        scrollingTextSpan.innerHTML = formattedText;
+        console.log('📝 Footer content updated from API');
+        
+        // Restart animation with new content
+        setAnimationDuration();
+      }
+    }
+  }
+
+  // OPTIMIZED: Load all data concurrently using loadAll()
+  const loadAllData = async () => {
+    try {
+      console.log('📡 Loading products, settings, and footer concurrently...');
+      
+      // Use the global API service to load everything in parallel
+      const { products, settings, footer } = await window.apiService.loadAll();
+      
+      console.log(`✅ Loaded ${products.categories?.length || 0} categories, settings, and footer data concurrently`);
+      
+      // Process settings
+      if (settings) {
+        applySettings(settings);
+      }
+      
+      // Process footer
+      if (footer) {
+        applyFooterSettings(footer);
+      }
+      
+      return products;
+      
+    } catch (error) {
+      console.error('❌ All API attempts failed:', error.message);
+      
+      // Update loading screen to show error message
+      const loadingTextEl = document.getElementById('loadingText');
+      if (loadingTextEl) {
+        loadingTextEl.textContent = 'Verbinding mislukt - probeer de pagina te vernieuwen';
+        loadingTextEl.style.color = '#ff6b6b';
+      }
+      
+      throw new Error(`Failed to load menu: ${error.message}`);
     }
   };
 
-  loadProducts()
+  loadAllData()
     .then((data) => {
+      console.log("🎯 EMERGENCY DEBUG: Initial data loaded:", data);
       const categories = Array.isArray(data.categories) ? data.categories : [];
+      console.log(`🎯 EMERGENCY DEBUG: Found ${categories.length} categories:`, categories.map(c => c.title));
       if (categories.length === 0) {
-        SLOTS.forEach((s) => (document.querySelector(s).innerHTML = ""));
+        console.error('🚨 EMERGENCY: No categories found, keeping HTML fallback!');
         return;
       }
       let categoryIndex = 0;
@@ -216,54 +420,32 @@ async function initializeSignage() {
       }
 
       function computeVisibleCountFor(catIdx) {
-        // Hard limit: maximum 8 items per slot
+        // EMERGENCY FIX: Use fixed count to avoid blocking calculations
         const MAX_ITEMS = 8;
-        
-        // Prefer cached value if present
-        if (visibleCountCache.has(catIdx)) return Math.min(visibleCountCache.get(catIdx), MAX_ITEMS);
         const cat = categories[catIdx];
         if (!cat || !Array.isArray(cat.items) || cat.items.length === 0) {
-          visibleCountCache.set(catIdx, 0);
           return 0;
         }
-        const slotEl = getSlotEl();
-        if (!slotEl) return 0;
-
-        // Ensure slot is measurable: force display and hide visually to avoid flicker
-        const prevDisplay = slotEl.style.display;
-        const prevVisibility = slotEl.style.visibility;
-        slotEl.style.display = "block";
-        slotEl.style.visibility = "hidden";
-
-        let lo = 1;
-        let hi = Math.min(cat.items.length, MAX_ITEMS); // Cap at MAX_ITEMS
-        let best = 1;
-        // Binary search max items that fit (up to MAX_ITEMS)
-        while (lo <= hi) {
-          const mid = Math.floor((lo + hi) / 2);
-          renderCategory(PRIMARY_SLOT, cat, cat.items.slice(0, mid));
-          if (fits(slotEl)) {
-            best = mid;
-            lo = mid + 1;
-          } else {
-            hi = mid - 1;
-          }
-        }
-
-        // Restore styles
-        slotEl.style.visibility = prevVisibility || "";
-        slotEl.style.display = prevDisplay || "";
-
-        const finalCount = Math.min(best, MAX_ITEMS);
-        visibleCountCache.set(catIdx, finalCount);
-        return finalCount;
+        // Simple fixed calculation - no complex DOM measurements that block
+        return Math.min(cat.items.length, MAX_ITEMS);
       }
 
       function renderDynamicSlots() {
+        console.log(`🎯 EMERGENCY DEBUG: renderDynamicSlots() called with ${categories.length} categories`);
+        
         // Get display mode from settings
         const columnCount = displaySettings.getColumnCount();
         
-        // Clear all slots first
+        // EMERGENCY FIX: Don't clear HTML fallback content immediately
+        // Only clear if we successfully have database data to show
+        if (categories.length === 0) {
+          console.warn('⚠️ No database categories loaded, keeping HTML fallback');
+          return;
+        }
+        
+        console.log(`🎯 EMERGENCY DEBUG: Rendering database content for ${categories.length} categories`);
+        
+        // Clear slots only when we have database data
         SLOTS.forEach(slot => {
           const el = document.querySelector(slot);
           if (el) {
@@ -297,13 +479,40 @@ async function initializeSignage() {
             renderCategory(SLOTS[0], currentCategory, slotItems);
           }
         } else {
-          // Two slot mode - STRICT 8-item limit per slot
-          const MAX_ITEMS_PER_SLOT = 8;
+          // Two slot mode - Use visibleCount for consistency with rotation logic
+          const MAX_ITEMS_PER_SLOT = Math.min(visibleCount, 8); // Respect computed visible count but cap at 8
           
           if (totalItems > MAX_ITEMS_PER_SLOT) {
-            // Split current category across 2 slots, max 8 items each
+            // Split current category across 2 slots based on pagination
+            const start = pagePartIndex * MAX_ITEMS_PER_SLOT;
+            const end = Math.min(totalItems, start + MAX_ITEMS_PER_SLOT * 2);
             
-            // Slot 1: First 8 items
+            // Slot 1: Current page items
+            const slot1El = document.querySelector(SLOTS[0]);
+            if (slot1El) {
+              slot1El.style.display = "block";
+              const slot1Items = items.slice(start, Math.min(end, start + MAX_ITEMS_PER_SLOT));
+              renderCategory(SLOTS[0], currentCategory, slot1Items);
+            }
+            
+            // Slot 2: Next page items (if available)
+            const slot2El = document.querySelector(SLOTS[1]);
+            if (slot2El && start + MAX_ITEMS_PER_SLOT < end) {
+              slot2El.style.display = "block";
+              const slot2Items = items.slice(start + MAX_ITEMS_PER_SLOT, end);
+              renderCategory(SLOTS[1], currentCategory, slot2Items);
+            } else if (slot2El) {
+              // If no more items in current category, show next category
+              const nextCategoryIndex = (categoryIndex + 1) % categories.length;
+              const nextCategory = categories[nextCategoryIndex];
+              if (nextCategory) {
+                slot2El.style.display = "block";
+                const nextItems = (nextCategory.items || []).slice(0, MAX_ITEMS_PER_SLOT);
+                renderCategory(SLOTS[1], nextCategory, nextItems);
+              }
+            }
+          } else {
+            // Show current category in slot 1, next category in slot 2
             const slot1El = document.querySelector(SLOTS[0]);
             if (slot1El) {
               slot1El.style.display = "block";
@@ -311,29 +520,13 @@ async function initializeSignage() {
               renderCategory(SLOTS[0], currentCategory, slot1Items);
             }
             
-            // Slot 2: Next 8 items with same category title
-            const slot2El = document.querySelector(SLOTS[1]);
-            if (slot2El) {
-              slot2El.style.display = "block";
-              const slot2Items = items.slice(MAX_ITEMS_PER_SLOT, MAX_ITEMS_PER_SLOT * 2);
-              renderCategory(SLOTS[1], currentCategory, slot2Items);
-            }
-          } else {
-            // Show current category in slot 1 (max 8 items), next category in slot 2
-            const slot1El = document.querySelector(SLOTS[0]);
-            if (slot1El) {
-              slot1El.style.display = "block";
-              const slot1Items = items.slice(0, MAX_ITEMS_PER_SLOT); // Ensure max 8
-              renderCategory(SLOTS[0], currentCategory, slot1Items);
-            }
-            
-            // Show next category in slot 2 (max 8 items)
+            // Show next category in slot 2
             const nextCategoryIndex = (categoryIndex + 1) % categories.length;
             const nextCategory = categories[nextCategoryIndex];
             const slot2El = document.querySelector(SLOTS[1]);
             if (slot2El && nextCategory) {
               slot2El.style.display = "block";
-              const nextItems = (nextCategory.items || []).slice(0, MAX_ITEMS_PER_SLOT); // Ensure max 8
+              const nextItems = (nextCategory.items || []).slice(0, MAX_ITEMS_PER_SLOT);
               renderCategory(SLOTS[1], nextCategory, nextItems);
             }
           }
@@ -351,6 +544,9 @@ async function initializeSignage() {
 
       // initial render
       renderDynamicSlots();
+
+      // Hide loading screen after menu data is properly rendered
+      hideLoadingScreenWhenReady();
 
       // Re-measure once web fonts have finished loading (prevents underestimation)
       if (document.fonts && document.fonts.ready) {
@@ -373,12 +569,17 @@ async function initializeSignage() {
           const items = categories[categoryIndex].items || [];
           const totalParts = Math.max(1, Math.ceil(items.length / Math.max(1, visibleCount)));
           
+          console.log(`Category: ${categories[categoryIndex].title} (${categoryIndex}), pagePartIndex: ${pagePartIndex}, totalParts: ${totalParts}, visibleCount: ${visibleCount}`);
+          
           if (pagePartIndex >= totalParts) {
+            const oldCategoryIndex = categoryIndex;
             pagePartIndex = 0;
             categoryIndex = (categoryIndex + 1) % categories.length;
+            console.log(`Advancing from category ${oldCategoryIndex} (${categories[oldCategoryIndex].title}) to ${categoryIndex} (${categories[categoryIndex].title})`);
           }
         } else {
           // Skip empty categories
+          console.log(`Skipping empty category ${categoryIndex}: ${categories[categoryIndex]?.title || 'undefined'}`);
           pagePartIndex = 0;
           categoryIndex = (categoryIndex + 1) % categories.length;
         }
@@ -386,151 +587,212 @@ async function initializeSignage() {
         renderDynamicSlots();
       }, ROTATE_INTERVAL_MS);
 
-      // Set up automatic refresh for CMS updates
-      if (cmsConnector) {
-        const refreshData = async () => {
-          try {
-            console.log("Checking for CMS updates...");
-            const newData = await cmsConnector.getProducts();
-            
-            // Only update if data has actually changed
-            if (JSON.stringify(newData) !== JSON.stringify(data)) {
-              console.log("CMS data updated, refreshing display");
-              
-              // Clear cache and restart rotation
-              visibleCountCache.clear();
-              categoryIndex = 0;
-              pagePartIndex = 0;
-              
-              // Update categories with new data
-              const newCategories = Array.isArray(newData.categories) ? newData.categories : [];
-              categories.length = 0;
-              categories.push(...newCategories);
-              
-              // Re-render all slots
-              renderDynamicSlots();
-            }
-          } catch (error) {
-            console.warn("Failed to refresh CMS data:", error);
+      // CLEAN API INTEGRATION: Using new API service with proper retry logic
+      // Simple periodic refresh using direct API calls instead
+      const refreshData = async () => {
+        try {
+          console.log("🔄 Refreshing data from direct API...");
+          const newData = await loadAllData();
+          
+          if (newData && newData.categories && newData.categories.length > 0) {
+            const newCategories = Array.isArray(newData.categories) ? newData.categories : [];
+            categories.length = 0;
+            categories.push(...newCategories);
+            console.log("✅ Data refreshed:", categories.map(c => c.title));
+            renderDynamicSlots();
           }
-        };
+        } catch (error) {
+          console.warn("⚠️ Failed to refresh data:", error);
+        }
+      };
 
-        // Set up periodic refresh
-        setInterval(refreshData, cmsConnector.config.refresh.interval);
-
-        // Listen for reconnection events
-        window.addEventListener('cms-reconnected', refreshData);
-      }
+      // Automatic refresh every 5 minutes with reliable API service
+      setInterval(refreshData, 300000);
     })
     .catch((err) => {
       console.error("Error loading products data", err);
-      // Show error message in slots if products fail to load
-      SLOTS.forEach((s) => {
-        const slotEl = document.querySelector(s);
-        if (slotEl) {
-          slotEl.innerHTML = '<div class="CategoryTitle">Loading Error</div><div class="MenuItem"><div class="MenuItemType">Products could not be loaded</div><div class="MenuFoodItem">Please check connection</div></div>';
-        }
-      });
+      
+      // Ensure loading screen shows error message for any unhandled errors
+      const loadingTextEl = document.getElementById('loadingText');
+      if (loadingTextEl && !loadingTextEl.style.color) {
+        loadingTextEl.textContent = 'Fout bij laden menu - probeer de pagina te vernieuwen';
+        loadingTextEl.style.color = '#ff6b6b';
+      }
     });
+});
 
-  // Initialize footer after main initialization
-  initializeFooter();
-}
-
-// Footer Management
-function initializeFooter() {
-  console.log('Initializing footer...');
+document.addEventListener("DOMContentLoaded", function () {
   const scrollingTextSpan = document.querySelector(".ScrollingText span");
 
   // Footer slideshow management
   let footerSpeed = 30; // Default pixels per second
-  let footerText = "Investeer in jezelf of in je kind – personal training vanaf €37,50 per les. Begin vandaag nog!||Interesse? Meld je bij de bar of stuur ons een mailtje.";
+  let footerText = ""; // No fallback content - only show footer if database has content
   let footerContinuous = true; // Default to continuous scrolling
+  let footerInitialized = false;
 
   function updateFooterContent() {
     if (!scrollingTextSpan) return;
     
     // Split text by custom separator and add SVG dividers
     const textParts = footerText.split('||').filter(part => part.trim());
+    
+    // Always ensure footer is visible - never hide it
+    const footerContainer = document.querySelector('.SignageFooter');
+    if (footerContainer) {
+      footerContainer.style.display = 'block';
+    }
+    
+    // Only update content if we have valid database content
+    if (textParts.length === 0 || !footerText.trim()) {
+      console.log('⚠️ No valid database footer content, keeping HTML fallback');
+      return;
+    } else {
+      console.log('✅ Updating footer with database content');
+    }
+    
     let htmlContent = '';
     
-    // Create the scrolling content with SVG separators
+    // Get per-row color settings if available
+    const footerRowColors = displaySettings?.settings?.footer_row_colors;
+    const usePerRowColors = footerRowColors && Array.isArray(footerRowColors);
+    
+    // Create the scrolling content with SVG separators and optional per-row colors
     textParts.forEach((part, index) => {
-      htmlContent += part.trim();
+      let partContent = part.trim();
+      
+      // Apply per-row color if specified
+      if (usePerRowColors && footerRowColors[index]) {
+        const colorClass = footerRowColors[index] === 'light' ? 'footer-text-light' : 'footer-text-dark';
+        partContent = `<span class="${colorClass}">${partContent}</span>`;
+        console.log(`🎨 Applied ${colorClass} to row ${index + 1}`);
+      }
+      
+      htmlContent += partContent;
       // Add SVG separator after each part
       htmlContent += '<img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" />';
     });
     
     if (footerContinuous) {
-      // Duplicate the content for seamless continuous scrolling
+      // Voor echte continue scrolling: dupliceer de content zonder extra spacing
       scrollingTextSpan.innerHTML = htmlContent + htmlContent;
+      scrollingTextSpan.style.animationName = 'scrollTextContinuous';
     } else {
-      // Single content with natural end/start gap
+      // Discrete mode: enkele content met natuurlijke pauze
       scrollingTextSpan.innerHTML = htmlContent;
+      scrollingTextSpan.style.animationName = 'scrollTextDiscrete';
     }
+    
+    // Set animation immediately after content is set
+    requestAnimationFrame(() => {
+      setAnimationDuration();
+      footerInitialized = true;
+    });
   }
 
   function setAnimationDuration() {
-    if (!scrollingTextSpan) return;
+    if (!scrollingTextSpan || !scrollingTextSpan.innerHTML.trim()) return;
     
+    // Force layout calculation to ensure accurate measurements
+    const containerWidth = scrollingTextSpan.parentElement.offsetWidth;
     let spanWidth = scrollingTextSpan.offsetWidth;
     
-    if (footerContinuous) {
-      // Get half the width since the text is duplicated for seamless loop
+    // Fallback if measurements fail
+    if (!containerWidth || !spanWidth) {
+      console.warn('⚠️ Footer measurement failed, using fallback timing');
+      scrollingTextSpan.style.animationDuration = '20s';
+      return;
+    }
+    
+    let totalDistance;
+    
+    if (footerContinuous && spanWidth > 0) {
+      // Continue: van 100% naar -100% = 200% van container breedte
+      // Content is gedupliceerd, dus halve span breedte = echte content breedte
       spanWidth = spanWidth / 2;
+      totalDistance = containerWidth + spanWidth; // 100% container + volledige content breedte
+    } else {
+      // Discrete: van 100% naar -100% = 200% van container breedte  
+      totalDistance = spanWidth + (2 * containerWidth); // Volledige span + 200% container
     }
     
     // Calculate duration based on speed setting (pixels per second)
-    const duration = spanWidth / footerSpeed;
-    scrollingTextSpan.style.animationDuration = duration + "s";
+    // Minimum duration of 5s to prevent too fast scrolling
+    const calculatedDuration = Math.max(5, totalDistance / footerSpeed);
+    scrollingTextSpan.style.animationDuration = calculatedDuration + "s";
+    
+    console.log(`🎬 Footer animation: ${footerContinuous ? 'continuous' : 'discrete'}, spanWidth: ${spanWidth}px, containerWidth: ${containerWidth}px, totalDistance: ${totalDistance}px, duration: ${calculatedDuration}s`);
   }
 
-  // Load footer settings from CMS
-  async function loadFooterSettings() {
-    if (displaySettings && displaySettings.settings) {
-      footerSpeed = parseInt(displaySettings.settings.footer_speed) || 30;
-      footerText = displaySettings.settings.footer_text || footerText;
-      footerContinuous = displaySettings.settings.footer_continuous !== false; // Default to true
-      
-      console.log(`Footer settings loaded - Speed: ${footerSpeed}px/s, Continuous: ${footerContinuous}, Text: ${footerText.substring(0, 50)}...`);
-      
-      updateFooterContent();
+
+  // Show footer immediately with fallback content, then load settings
+  const footerContainer = document.querySelector('.SignageFooter');
+  if (footerContainer) {
+    // Start visible for instant display - no delay needed
+    footerContainer.style.display = 'block'; 
+    console.log('✨ Footer shown immediately with HTML content');
+    
+    // Start animation immediately with HTML content
+    if (scrollingTextSpan && scrollingTextSpan.innerHTML.trim()) {
+      console.log('🎬 Starting footer animation with HTML content immediately');
       setAnimationDuration();
     }
   }
 
-  // Initial setup
-  updateFooterContent();
-  setAnimationDuration();
-
-  // Load settings when available - displaySettings should already be loaded at this point
-  if (displaySettings && displaySettings.loaded) {
-    loadFooterSettings();
-  } else {
-    // Wait a bit for display settings to load if not ready yet
-    setTimeout(() => {
-      if (displaySettings && displaySettings.loaded) {
-        loadFooterSettings();
+  // Load footer using dedicated footer API endpoint
+  const loadFooterSettings = async () => {
+    try {
+      console.log('📡 Loading footer from dedicated footer API...');
+      
+      // Use the global API service with retry logic
+      const footerData = await window.apiService.loadFooter();
+      
+      if (footerData && footerData.footer_text && footerData.footer_text.trim()) {
+        console.log('✅ Got footer content from dedicated API, updating...');
+        
+        // Map footer API response to display properties
+        footerSpeed = parseInt(footerData.scroll_speed) || 30;
+        footerText = footerData.footer_text.trim().replace('<separator>', '||'); // Convert separator format
+        footerContinuous = footerData.scroll_direction !== 'static';
+        
+        // Apply footer text color if provided
+        if (footerData.text_color) {
+          document.body.style.setProperty('--footer-text-color', footerData.text_color);
+          console.log(`🎨 Applied footer text color: ${footerData.text_color}`);
+        }
+        
+        // Apply footer font size if provided
+        if (footerData.font_size) {
+          document.body.style.setProperty('--footer-font-size', footerData.font_size);
+          console.log(`📏 Applied footer font size: ${footerData.font_size}`);
+        }
+        
+        // Update divider image if provided and different from default
+        if (footerData.divider_image && footerData.divider_image !== 'assets/images/pinas_kroon.svg') {
+          // Note: Would need to update updateFooterContent() to use dynamic divider image
+          console.log(`🖼️ Custom divider image available: ${footerData.divider_image}`);
+        }
+        
+        // Update the footer with database content
+        updateFooterContent();
+        
+        console.log(`🎬 Footer configured: speed=${footerSpeed}px/s, direction=${footerData.scroll_direction}, color=${footerData.text_color}`);
+      } else {
+        console.log('ℹ️ No footer content in dedicated API, keeping HTML content');
       }
-    }, 500);
-  }
+    } catch (error) {
+      console.log('ℹ️ Footer API failed, keeping HTML content:', error.message);
+    }
+  };
+
+  // Start loading footer settings in background
+  // Footer settings will be loaded via loadAllData() for better performance
 
   // Restart the animation when it ends to simulate an infinite scroll
   if (scrollingTextSpan) {
     scrollingTextSpan.addEventListener("animationiteration", () => {
-      setAnimationDuration();
+      if (footerInitialized) {
+        setAnimationDuration();
+      }
     });
-  }
-}
-
-// Products rendering and rotation - single DOMContentLoaded listener
-document.addEventListener("DOMContentLoaded", async function () {
-  console.log('DOM Content Loaded, initializing signage...');
-  
-  try {
-    await initializeSignage();
-    console.log('Signage initialization complete');
-  } catch (err) {
-    console.error('Failed to initialize signage:', err);
   }
 });

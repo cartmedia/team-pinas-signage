@@ -827,19 +827,19 @@
                                 <div>
                                     <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                                         <i class="fas fa-font mr-2 text-purple-500"></i>
-                                        Tekst Regels
+                                        Footer Tekst
                                     </h4>
-                                    <div id="footerTextLines" class="space-y-2 mb-3">
-                                        <!-- Footer text lines will be added here dynamically -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Footer Tekst
+                                        </label>
+                                        <textarea id="footerText" rows="3" 
+                                                  class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                  placeholder="Voer footer tekst in..."></textarea>
+                                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                            Gebruik &lt;separator&gt; om scheidingen (kroon) in te voegen tussen tekst delen.
+                                        </p>
                                     </div>
-                                    <button type="button" id="addFooterLine" 
-                                            class="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-                                        <i class="fas fa-plus mr-1"></i>
-                                        Nieuwe regel toevoegen
-                                    </button>
-                                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                        SVG scheidingen (kroon) worden automatisch tussen elke regel geplaatst.
-                                    </p>
                                 </div>
                                 
                                 <!-- Animation Settings -->
@@ -866,7 +866,7 @@
                                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Scroll Snelheid
                                             </label>
-                                            <input type="number" id="footerSpeed" min="10" max="100" step="5"
+                                            <input type="number" id="footerScrollSpeed" min="10" max="100" step="5"
                                                    class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                    value="30">
                                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -876,27 +876,45 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Footer Colors (Basic) -->
+                                <!-- Footer Colors -->
                                 <div>
                                     <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                                         <i class="fas fa-palette mr-2 text-indigo-500"></i>
-                                        Tekst Kleur
+                                        Kleuren
                                     </h4>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Footer Tekst Kleur
-                                        </label>
-                                        <select id="footerTextColor" 
-                                                class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            <option value="auto">Automatisch (past zich aan)</option>
-                                            <option value="dark" selected>Donker (zwarte tekst)</option>
-                                            <option value="light">Licht (witte tekst)</option>
-                                            <option value="custom">Custom (zie Branding → Footer Styling)</option>
-                                        </select>
-                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                            Voor meer geavanceerde kleurinstellingen, zie Branding → Footer Styling
-                                        </p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Tekst Kleur
+                                            </label>
+                                            <input type="color" id="footerTextColor" 
+                                                   class="mt-1 block w-full h-10 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   value="#101010">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Kies de kleur voor de footer tekst
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Achtergrond Kleur
+                                            </label>
+                                            <input type="color" id="footerBackgroundColor" 
+                                                   class="mt-1 block w-full h-10 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   value="#FFFFFF">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Kies de achtergrondkleur voor de footer
+                                            </p>
+                                        </div>
                                     </div>
+                                </div>
+                                
+                                <!-- Save Button -->
+                                <div class="flex justify-end pt-6 border-t border-gray-200 dark:border-gray-700">
+                                    <button type="button" id="saveFooterSettings" 
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <i class="fas fa-save mr-2"></i>
+                                        Footer Instellingen Opslaan
+                                    </button>
                                 </div>
                             </div>
                         </div>

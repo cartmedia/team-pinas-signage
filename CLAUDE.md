@@ -24,8 +24,8 @@ Team Pinas Signage is a digital menu display system with Neon PostgreSQL databas
 - Loading screen with 1.6 second timeout maximum
 
 **API Layer (`/server/functions/`)**
-- **Public APIs** (no auth): `/products`, `/settings` - consumed by signage display
-- **Admin APIs** (secured): `/admin-products`, `/admin-categories` - used by CMS
+- **Public APIs** (no auth): `/products`, `/settings`, `/footer` - consumed by signage display
+- **Admin APIs** (secured): `/admin-products`, `/admin-categories`, `/footer` (POST/PUT) - used by CMS
 - Authentication via API key (`X-API-Key` header) or JWT tokens
 - Neon PostgreSQL connection with optimized connection pooling
 - 5-minute response caching for performance

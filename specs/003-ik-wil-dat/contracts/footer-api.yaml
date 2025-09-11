@@ -1,0 +1,300 @@
+openapi: 3.0.3
+info:
+  title: Footer Content API
+  description: Dedicated API endpoint for managing footer content configuration
+  version: 1.0.0
+  
+servers:
+  - url: https://tp-signage.netlify.app/.netlify/functions
+    description: Production
+  - url: http://localhost:8080/.netlify/functions
+    description: Development
+
+paths:
+  /footer:
+    get:
+      summary: Get active footer configuration
+      description: Retrieve the currently active footer configuration for display
+      tags:
+        - Footer
+      responses:
+        '200':
+          description: Success - active footer configuration returned
+          headers:
+            Cache-Control:
+              description: Cache for 5 minutes
+              schema:
+                type: string
+                example: "public, max-age=300"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterResponse'
+        '404':
+          description: No active footer configuration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+    post:
+      summary: Create new footer configuration
+      description: Create a new footer configuration (admin only)
+      tags:
+        - Footer
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FooterCreateRequest'
+      responses:
+        '201':
+          description: Footer configuration created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+    put:
+      summary: Update active footer configuration
+      description: Update the currently active footer configuration (admin only)
+      tags:
+        - Footer
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FooterUpdateRequest'
+      responses:
+        '200':
+          description: Footer configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No active footer configuration to update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    FooterResponse:
+      type: object
+      properties:
+        footer:
+          $ref: '#/components/schemas/FooterConfig'
+      required:
+        - footer
+        
+    FooterConfig:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique configuration ID
+          example: 1
+        footer_text:
+          type: string
+          description: Footer text content with embedded separators
+          example: "Team Pinas - Verse maaltijden voor iedereen <separator> Investeer in jezelf - personal training vanaf €37,50 per les"
+          maxLength: 1000
+        text_color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+          description: Text color in hex format
+          example: "#101010"
+        background_color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+          description: Optional background color override
+          example: "#c19d6c"
+          nullable: true
+        scroll_speed:
+          type: integer
+          minimum: 1
+          maximum: 200
+          description: Scrolling speed in pixels per second
+          example: 30
+        scroll_direction:
+          type: string
+          enum: ['left', 'right', 'static']
+          description: Scroll direction
+          example: "left"
+        divider_image:
+          type: string
+          description: Path to separator icon
+          example: "assets/images/pinas_kroon.svg"
+        font_size:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]+)?(vh|px|em|rem)$'
+          description: Font size with CSS units
+          example: "3vh"
+        is_active:
+          type: boolean
+          description: Whether this configuration is active
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+      required:
+        - id
+        - footer_text
+        - text_color
+        - scroll_speed
+        - scroll_direction
+        - divider_image
+        - font_size
+        - is_active
+        - created_at
+        - updated_at
+        
+    FooterCreateRequest:
+      type: object
+      properties:
+        footer_text:
+          type: string
+          description: Footer text content
+          example: "Team Pinas - Verse maaltijden voor iedereen"
+          maxLength: 1000
+        text_color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+          description: Text color in hex format
+          example: "#101010"
+        background_color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+          description: Optional background color override
+          example: "#c19d6c"
+          nullable: true
+        scroll_speed:
+          type: integer
+          minimum: 1
+          maximum: 200
+          description: Scrolling speed in pixels per second
+          example: 30
+        scroll_direction:
+          type: string
+          enum: ['left', 'right', 'static']
+          description: Scroll direction
+          example: "left"
+        divider_image:
+          type: string
+          description: Path to separator icon
+          example: "assets/images/pinas_kroon.svg"
+        font_size:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]+)?(vh|px|em|rem)$'
+          description: Font size with CSS units
+          example: "3vh"
+      required:
+        - footer_text
+        
+    FooterUpdateRequest:
+      type: object
+      properties:
+        footer_text:
+          type: string
+          description: Footer text content
+          maxLength: 1000
+        text_color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+          description: Text color in hex format
+        background_color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+          description: Optional background color override
+          nullable: true
+        scroll_speed:
+          type: integer
+          minimum: 1
+          maximum: 200
+          description: Scrolling speed in pixels per second
+        scroll_direction:
+          type: string
+          enum: ['left', 'right', 'static']
+          description: Scroll direction
+        divider_image:
+          type: string
+          description: Path to separator icon
+        font_size:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]+)?(vh|px|em|rem)$'
+          description: Font size with CSS units
+      # No required fields - partial updates allowed
+        
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Additional error details
+          nullable: true
+      required:
+        - error
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
