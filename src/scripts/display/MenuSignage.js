@@ -550,62 +550,27 @@ document.addEventListener("DOMContentLoaded", function () {
         renderDynamicSlots();
       }, ROTATE_INTERVAL_MS);
 
-      // Set up automatic refresh for CMS updates
-      if (cmsConnector) {
-        const refreshData = async () => {
-          try {
-            console.log("Checking for CMS updates...");
-            const newData = await cmsConnector.getProducts();
-            
-            // Only update if data has actually changed
-            if (JSON.stringify(newData) !== JSON.stringify(data)) {
-              console.log("CMS data updated, refreshing display");
-              console.log("New categories from CMS:", newData.categories?.map(c => c.title));
-              
-              // Preserve current rotation position when possible
-              const currentCategoryTitle = categories[categoryIndex]?.title;
-              
-              // Clear cache but preserve rotation state
-              visibleCountCache.clear();
-              
-              // Update categories with new data
-              const newCategories = Array.isArray(newData.categories) ? newData.categories : [];
-              categories.length = 0;
-              categories.push(...newCategories);
-              
-              // Try to find the same category in the new data to preserve position
-              if (currentCategoryTitle) {
-                const newIndex = categories.findIndex(cat => cat.title === currentCategoryTitle);
-                if (newIndex !== -1) {
-                  categoryIndex = newIndex;
-                  console.log(`Preserved rotation position at category: ${currentCategoryTitle} (${newIndex})`);
-                } else {
-                  categoryIndex = 0;
-                  pagePartIndex = 0;
-                  console.log("Could not preserve position, resetting to start");
-                }
-              } else {
-                categoryIndex = 0;
-                pagePartIndex = 0;
-              }
-              
-              console.log("Updated categories array:", categories.map(c => c.title));
-              
-              // Re-render all slots
-              renderDynamicSlots();
-            }
-          } catch (error) {
-            console.warn("Failed to refresh CMS data:", error);
+      // EMERGENCY FIX: Removed problematic CMS Connector to prevent config errors
+      // Simple periodic refresh using direct API calls instead
+      const refreshData = async () => {
+        try {
+          console.log("🔄 Refreshing data from direct API...");
+          const newData = await loadProducts();
+          
+          if (newData && newData.categories && newData.categories.length > 0) {
+            const newCategories = Array.isArray(newData.categories) ? newData.categories : [];
+            categories.length = 0;
+            categories.push(...newCategories);
+            console.log("✅ Data refreshed:", categories.map(c => c.title));
+            renderDynamicSlots();
           }
-        };
+        } catch (error) {
+          console.warn("⚠️ Failed to refresh data:", error);
+        }
+      };
 
-        // Set up periodic refresh
-        const refreshInterval = cmsConnector?.config?.refresh?.interval || 300000; // 5 minutes fallback
-        setInterval(refreshData, refreshInterval);
-
-        // Listen for reconnection events
-        window.addEventListener('cms-reconnected', refreshData);
-      }
+      // Simple 5-minute refresh without problematic CMS Connector
+      setInterval(refreshData, 300000);
     })
     .catch((err) => console.error("Error loading products data", err));
 });
