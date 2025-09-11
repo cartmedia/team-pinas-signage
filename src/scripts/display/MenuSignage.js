@@ -361,11 +361,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   loadProducts()
     .then((data) => {
-      console.log("Initial data loaded:", data);
+      console.log("🎯 EMERGENCY DEBUG: Initial data loaded:", data);
       const categories = Array.isArray(data.categories) ? data.categories : [];
-      console.log("Initial categories:", categories.map(c => c.title));
+      console.log(`🎯 EMERGENCY DEBUG: Found ${categories.length} categories:`, categories.map(c => c.title));
       if (categories.length === 0) {
-        SLOTS.forEach((s) => (document.querySelector(s).innerHTML = ""));
+        console.error('🚨 EMERGENCY: No categories found, keeping HTML fallback!');
         return;
       }
       let categoryIndex = 0;
@@ -394,10 +394,21 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       function renderDynamicSlots() {
+        console.log(`🎯 EMERGENCY DEBUG: renderDynamicSlots() called with ${categories.length} categories`);
+        
         // Get display mode from settings
         const columnCount = displaySettings.getColumnCount();
         
-        // Clear all slots first
+        // EMERGENCY FIX: Don't clear HTML fallback content immediately
+        // Only clear if we successfully have database data to show
+        if (categories.length === 0) {
+          console.warn('⚠️ No database categories loaded, keeping HTML fallback');
+          return;
+        }
+        
+        console.log(`🎯 EMERGENCY DEBUG: Rendering database content for ${categories.length} categories`);
+        
+        // Clear slots only when we have database data
         SLOTS.forEach(slot => {
           const el = document.querySelector(slot);
           if (el) {
