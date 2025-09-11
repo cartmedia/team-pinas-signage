@@ -656,7 +656,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const textParts = footerText.split('||').filter(part => part.trim());
     
     // Hide footer if no content
-    const footerContainer = document.querySelector('.Footer');
+    const footerContainer = document.querySelector('.SignageFooter');
     if (textParts.length === 0 || !footerText.trim()) {
       if (footerContainer) {
         footerContainer.style.display = 'none';
@@ -792,50 +792,54 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Show footer immediately with fallback content, then load settings
-  const footerContainer = document.querySelector('.Footer');
+  const footerContainer = document.querySelector('.SignageFooter');
   if (footerContainer) {
-    // Start visible for instant display
+    // Start visible for instant display - no delay needed
     footerContainer.style.display = 'block'; 
-    console.log('✨ Footer shown immediately, loading settings...');
+    console.log('✨ Footer shown immediately with HTML content');
     
-    // Footer content is now directly in HTML, no need for fallback JavaScript
-    console.log('✨ Footer starts with HTML content, will be replaced by database content when loaded');
+    // Start animation immediately with HTML content
+    if (scrollingTextSpan && scrollingTextSpan.innerHTML.trim()) {
+      console.log('🎬 Starting footer animation with HTML content immediately');
+      setAnimationDuration();
+    }
   }
 
-  // Fast settings loading with immediate check and timeout fallback
+  // Simplified footer loading - try immediately, no complex timeouts
   const loadFooterWithTimeout = async () => {
     // Check if settings are already loaded
     if (displaySettings && displaySettings.settings && displaySettings.settings.footer_text) {
-      console.log('⚡ Footer settings already loaded, showing immediately');
+      console.log('⚡ Footer settings already loaded, updating content');
       loadFooterSettings();
       return;
     }
     
-    const settingsTimeout = new Promise(resolve => setTimeout(resolve, 1500)); // Reduced to 1.5s timeout
-    
+    // Quick check without blocking - just try once
     try {
       if (displaySettings) {
-        // Race between settings loading and timeout
-        await Promise.race([
-          displaySettings.loadSettings().then(() => {
-            console.log('⚡ Footer settings loaded via promise');
+        // Give settings just 300ms to load, then continue with HTML fallback
+        const loadPromise = displaySettings.loadSettings().then(() => {
+          console.log('⚡ Footer settings loaded, updating content');
+          if (displaySettings.settings && displaySettings.settings.footer_text) {
             loadFooterSettings();
-          }),
-          settingsTimeout.then(() => {
-            console.warn('⏰ Footer settings timeout, checking if settings are now available...');
-            if (displaySettings.settings && displaySettings.settings.footer_text) {
-              console.log('⚡ Footer settings found after timeout');
-              loadFooterSettings();
-            } else {
-              console.log('ℹ️ No footer settings available after timeout');
-            }
-          })
-        ]);
+          }
+        });
+        
+        // Don't await - let it load in background, HTML content is already visible
+        setTimeout(() => {
+          if (displaySettings.settings && displaySettings.settings.footer_text) {
+            console.log('⚡ Footer settings available after quick check');
+            loadFooterSettings();
+          } else {
+            console.log('ℹ️ Using HTML footer content (database not loaded yet)');
+          }
+        }, 300);
+        
       } else {
-        console.log('⚠️ No displaySettings available, keeping footer hidden');
+        console.log('ℹ️ No displaySettings available, using HTML footer content');
       }
     } catch (error) {
-      console.warn('❌ Footer settings loading failed:', error);
+      console.log('ℹ️ Footer settings loading failed, using HTML content:', error);
     }
   };
 
