@@ -235,20 +235,16 @@ document.addEventListener("DOMContentLoaded", function () {
     slot3: document.querySelector(".CategorySlot[data-slot='3']")
   };
   
-  // Load settings and products in parallel for faster initialization
-  const initPromises = [
-    displaySettings.loadSettings().then(() => {
-      ROTATE_INTERVAL_MS = parseInt(displaySettings.settings.rotation_interval) || 6000;
-      console.log(`Updated rotation interval to ${ROTATE_INTERVAL_MS}ms`);
-    }),
-    // Products will be loaded by setupAndInit() 
-  ];
-
-  Promise.all(initPromises).then(() => {
-    console.log('⚡ Parallel initialization complete');
+  // Load settings in parallel but don't block menu loading
+  displaySettings.loadSettings().then(() => {
+    ROTATE_INTERVAL_MS = parseInt(displaySettings.settings.rotation_interval) || 6000;
+    console.log(`⚡ Settings loaded - rotation interval: ${ROTATE_INTERVAL_MS}ms`);
   }).catch(error => {
-    console.warn('Some initialization failed, continuing anyway:', error);
+    console.warn('⚠️ Settings loading failed, using defaults:', error);
+    ROTATE_INTERVAL_MS = 6000; // Use default
   });
+  
+  console.log('🚀 Menu rendering starts immediately, settings load in parallel');
 
   // Strip technical prefixes from names (e.g., "A Cola" -> "Cola")
   function cleanName(name) {
@@ -356,14 +352,44 @@ document.addEventListener("DOMContentLoaded", function () {
     retries: { max: 3, delay: 1000 }
   }) : null;
   
-  // Load products from CMS or fallback to local JSON
+  // Load products from CMS or fallback to local JSON with timeout
   const loadProducts = async () => {
-    if (cmsConnector) {
-      return await cmsConnector.getProducts();
-    } else {
-      // Fallback to original method if CMS connector not available
-      const response = await fetch("/assets/data/products.json");
-      return await response.json();
+    try {
+      if (cmsConnector) {
+        // Race against timeout to prevent hanging
+        const productPromise = cmsConnector.getProducts();
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => resolve({ categories: [], error: 'timeout' }), 2000);
+        });
+        
+        const result = await Promise.race([productPromise, timeoutPromise]);
+        if (result.error === 'timeout') {
+          console.warn('⏰ CMS products timeout, falling back to local data');
+          throw new Error('CMS timeout');
+        }
+        return result;
+      } else {
+        // Fallback to original method if CMS connector not available
+        const response = await fetch("/assets/data/products.json");
+        return await response.json();
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to load from CMS/local, using hardcoded fallback data');
+      // Hardcoded fallback for when everything fails
+      return {
+        categories: [
+          {
+            title: "Team Pinas Menu",
+            items: [
+              { name: "Proteineshake", price: 4.75 },
+              { name: "Cola", price: 2.65 },
+              { name: "Koffie", price: 2.15 },
+              { name: "Broodje frikandel", price: 2.65 },
+              { name: "Snickers", price: 1.65 }
+            ]
+          }
+        ]
+      };
     }
   };
 
@@ -655,18 +681,18 @@ document.addEventListener("DOMContentLoaded", function () {
     // Split text by custom separator and add SVG dividers
     const textParts = footerText.split('||').filter(part => part.trim());
     
-    // Hide footer if no content
+    // Always ensure footer is visible - never hide it
     const footerContainer = document.querySelector('.SignageFooter');
+    if (footerContainer) {
+      footerContainer.style.display = 'block';
+    }
+    
+    // Only update content if we have valid database content
     if (textParts.length === 0 || !footerText.trim()) {
-      if (footerContainer) {
-        footerContainer.style.display = 'none';
-      }
+      console.log('⚠️ No valid database footer content, keeping HTML fallback');
       return;
     } else {
-      if (footerContainer) {
-        footerContainer.style.display = 'block';
-        console.log('✅ Footer shown immediately with content');
-      }
+      console.log('✅ Updating footer with database content');
     }
     
     let htmlContent = '';
@@ -777,17 +803,28 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 100);
       }
       
-      // Only show footer if we have actual content from database
-      if (footerText) {
-        console.log('✅ Footer content available, initializing...');
+      // Only override HTML content if we have actual content from database
+      if (footerText && footerText.trim()) {
+        console.log('✅ Footer content available from database, updating...');
         updateFooterContent(); // This will show the footer and start animation
       } else {
         console.log('⚠️ Empty footer text in database, keeping HTML fallback content');
         // Keep the HTML content visible - don't hide footer
+        // Just ensure footer is visible and animating
+        const footerContainer = document.querySelector('.SignageFooter');
+        if (footerContainer) {
+          footerContainer.style.display = 'block';
+          console.log('✅ HTML footer content preserved and visible');
+        }
       }
     } else {
-      console.log('ℹ️ No footer content in database, keeping HTML fallback content');
+      console.log('ℹ️ No footer settings loaded, keeping HTML fallback content');
       // Keep the HTML content visible - don't hide footer
+      const footerContainer = document.querySelector('.SignageFooter');
+      if (footerContainer) {
+        footerContainer.style.display = 'block';
+        console.log('✅ HTML footer content preserved and visible');
+      }
     }
   }
 
