@@ -20,6 +20,7 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "netlify-cli": "^17.0.0",
     "playwright": "^1.55.0",
     "tailwindcss": "^4.1.12"
