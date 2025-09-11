@@ -688,32 +688,49 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Simple footer loading - just fetch and update if available
+  // Load footer using dedicated footer API endpoint
   const loadFooterSettings = async () => {
     try {
-      console.log('📡 Loading footer settings from API...');
-      const response = await fetch('/.netlify/functions/settings');
+      console.log('📡 Loading footer from dedicated footer API...');
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      // Use the global API service with retry logic
+      const footerData = await window.apiService.loadFooter();
       
-      const data = await response.json();
-      const settings = data.settings || {};
-      
-      if (settings.footer_text && settings.footer_text.trim()) {
-        console.log('✅ Got footer content from API, updating...');
-        footerSpeed = parseInt(settings.footer_speed) || 30;
-        footerText = settings.footer_text.trim();
-        footerContinuous = settings.footer_continuous !== false;
+      if (footerData && footerData.footer_text && footerData.footer_text.trim()) {
+        console.log('✅ Got footer content from dedicated API, updating...');
+        
+        // Map footer API response to display properties
+        footerSpeed = parseInt(footerData.scroll_speed) || 30;
+        footerText = footerData.footer_text.trim().replace('<separator>', '||'); // Convert separator format
+        footerContinuous = footerData.scroll_direction !== 'static';
+        
+        // Apply footer text color if provided
+        if (footerData.text_color) {
+          document.body.style.setProperty('--footer-text-color', footerData.text_color);
+          console.log(`🎨 Applied footer text color: ${footerData.text_color}`);
+        }
+        
+        // Apply footer font size if provided
+        if (footerData.font_size) {
+          document.body.style.setProperty('--footer-font-size', footerData.font_size);
+          console.log(`📏 Applied footer font size: ${footerData.font_size}`);
+        }
+        
+        // Update divider image if provided and different from default
+        if (footerData.divider_image && footerData.divider_image !== 'assets/images/pinas_kroon.svg') {
+          // Note: Would need to update updateFooterContent() to use dynamic divider image
+          console.log(`🖼️ Custom divider image available: ${footerData.divider_image}`);
+        }
         
         // Update the footer with database content
         updateFooterContent();
+        
+        console.log(`🎬 Footer configured: speed=${footerSpeed}px/s, direction=${footerData.scroll_direction}, color=${footerData.text_color}`);
       } else {
-        console.log('ℹ️ No footer content in API, keeping HTML content');
+        console.log('ℹ️ No footer content in dedicated API, keeping HTML content');
       }
     } catch (error) {
-      console.log('ℹ️ Footer API failed, keeping HTML content:', error);
+      console.log('ℹ️ Footer API failed, keeping HTML content:', error.message);
     }
   };
 

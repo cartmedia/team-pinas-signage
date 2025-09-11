@@ -1,10 +1,75 @@
+/* Loading Screen */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #1e1e1e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease-out;
+}
+
+.loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-content {
+  text-align: center;
+  animation: fadeIn 0.8s ease-in;
+}
+
+.loading-logo {
+  width: 8vh;
+  height: 8vh;
+  margin-bottom: 3vh;
+  animation: pulse 2s ease-in-out infinite;
+  /* Performance: Use transform for hardware acceleration */
+  will-change: transform;
+}
+
+.loading-text {
+  font-family: "futura-pt", sans-serif;
+  font-weight: 500;
+  font-size: 4vh;
+  color: #c19d6c;
+  margin-bottom: 3vh;
+  letter-spacing: 0.1em;
+}
+
+.loading-spinner {
+  width: 4vh;
+  height: 4vh;
+  border: 0.3vh solid rgba(193, 157, 108, 0.3);
+  border-top: 0.3vh solid #c19d6c;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(2vh); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 body {
-  /* Team Pinas Background with dark overlay */
+  /* Performance: Optimized background loading */
   background: linear-gradient(rgba(16, 16, 16, 0.6), rgba(16, 16, 16, 0.6)),
     url("/assets/images/background.jpg");
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
+  background-attachment: scroll; /* Performance: Fixed backgrounds cause repainting */
+  /* Performance: Use will-change for smooth animations */
+  will-change: transform;
   
   /* CSS Custom Properties for dynamic heights and logo */
   --header-height: 15vh;
@@ -134,6 +199,29 @@ body {
   min-height: 4vh; /* Ensure consistent height */
 }
 
+.MenuItem.on-sale {
+  /* Highlight background for sale items */
+  background-color: rgba(255, 193, 7, 0.1); /* Subtle gold background */
+  border-left: 3px solid #c19d6c; /* Team Pinas gold accent */
+  padding-left: 1vh; /* Add padding for border */
+  border-radius: 0.3rem;
+}
+
+.MenuItem.is-new {
+  /* Highlight background for new items */
+  background-color: rgba(34, 197, 94, 0.1); /* Subtle green background */
+  border-left: 3px solid #22c55e; /* Fresh green accent */
+  padding-left: 1vh; /* Add padding for border */
+  border-radius: 0.3rem;
+}
+
+.MenuItem.on-sale.is-new {
+  /* Both sale and new - combine both effects */
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 50%, rgba(34, 197, 94, 0.1) 50%);
+  border-left: 3px solid;
+  border-image: linear-gradient(45deg, #c19d6c, #22c55e) 1;
+}
+
 .MenuItemType {
   flex: 1;
   font-family: "coolvetica", sans-serif;
@@ -144,6 +232,56 @@ body {
   padding: 0.2vh 0; /* Remove horizontal padding */
   z-index: 2;
   position: relative;
+}
+
+.sale-badge {
+  display: inline-block;
+  background: linear-gradient(45deg, #c19d6c, #d4af74);
+  color: #1a1a1a;
+  font-size: 1.8vh;
+  font-weight: bold;
+  padding: 0.3vh 0.8vh;
+  border-radius: 0.8vh;
+  margin-left: 1vh;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.new-badge {
+  display: inline-block;
+  background: linear-gradient(45deg, #22c55e, #16a34a);
+  color: #ffffff;
+  font-size: 1.8vh;
+  font-weight: bold;
+  padding: 0.3vh 0.8vh;
+  border-radius: 0.8vh;
+  margin-left: 1vh;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  animation: sparkle 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes sparkle {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  25% { 
+    opacity: 0.9; 
+    transform: scale(1.05);
+  }
+  75% { 
+    opacity: 0.95; 
+    transform: scale(1.02);
+  }
 }
 
 .MenuFoodItem {
@@ -191,7 +329,7 @@ body {
 /* FOOTER LAYOUT */
 .SignageFooter {
   background-color: #c19d6c; /* Team Pinas Gold */
-  color: #101010; /* Dark text for contrast on gold */
+  color: var(--footer-text-color, #101010); /* Configurable text color with dark default */
   font-family: "futura-pt", sans-serif;
   font-size: 3vh;
   text-align: center;
@@ -202,6 +340,28 @@ body {
   align-items: center;
   justify-content: center;
   line-height: 1; /* Tight line height for better control */
+}
+
+/* Footer text color variants */
+.SignageFooter.footer-light {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.SignageFooter.footer-dark {
+  color: #101010;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
+}
+
+/* Per-row text color overrides */
+.ScrollingText .footer-text-light {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.ScrollingText .footer-text-dark {
+  color: #101010 !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 .CategorySlot {
@@ -300,12 +460,22 @@ hr {
   width: 100%;
 }
 
-@keyframes scrollText {
-  from {
-    transform: translateX(0);
+/* Performance: Use transform3d for hardware acceleration */
+@keyframes scrollTextContinuous {
+  0% {
+    transform: translate3d(100%, 0, 0);
   }
-  to {
-    transform: translateX(-50%);
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+@keyframes scrollTextDiscrete {
+  0% {
+    transform: translate3d(100%, 0, 0);
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
   }
 }
 
@@ -316,12 +486,16 @@ hr {
   will-change: transform;
   vertical-align: middle; /* Ensure proper vertical alignment */
   line-height: 1; /* Match footer line-height */
+  /* Performance: Use transform3d for hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Separator crown icon in footer */
 .ScrollingText img.sep {
   height: 2.6vh; /* slightly smaller than text height */
-  vertical-align: middle;
+  vertical-align: baseline;
+  transform: translateY(-0.1vh); /* Fine-tune vertical position */
   margin: 0 1.5vh;
   opacity: 0.9;
 }

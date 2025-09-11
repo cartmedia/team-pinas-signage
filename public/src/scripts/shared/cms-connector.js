@@ -3,7 +3,11 @@
 
 class CMSConnector {
   constructor(config) {
-    this.config = config || window.CMS_CONFIG;
+    this.config = config || window.CMS_CONFIG || {
+      cache: { enabled: true, duration: 300000 },
+      api: { baseUrl: '/.netlify/functions', timeout: 10000 },
+      retries: { max: 3, delay: 1000 }
+    };
     this.cache = new Map();
     this.retryCount = 0;
     this.isOnline = navigator.onLine;
@@ -27,7 +31,7 @@ class CMSConnector {
     
     // Try cache first
     if (this.config.cache.enabled && this.isCacheValid(cacheKey)) {
-      console.log('Loading products from cache');
+      console.log('Loading products from cache - fast load!');
       return this.getFromCache(cacheKey);
     }
 
@@ -37,12 +41,18 @@ class CMSConnector {
         const url = this.config.api.baseUrl + this.config.api.endpoints.products;
         const response = await fetch(url, {
           headers: this.config.api.headers,
-          timeout: 10000 // 10 second timeout
+          signal: AbortSignal.timeout(3000) // 3 second timeout - faster fail
         });
 
         if (response.ok) {
           const data = await response.json();
+          console.log('Raw CMS API data:', data);
+          console.log('Raw categories with display_order:');
+          data.categories?.forEach((c, idx) => {
+            console.log(`  ${idx}: ${c.title} (display_order: ${c.display_order})`);
+          });
           const mappedData = this.mapProductsData(data);
+          console.log('Mapped categories:', mappedData.categories?.map(c => c.title));
           
           // Cache the result
           this.setCache(cacheKey, mappedData);
@@ -78,8 +88,21 @@ class CMSConnector {
       console.error('Failed to load local products:', error);
     }
     
-    // Return empty structure if everything fails
-    return { categories: [] };
+    // Return fast local fallback if everything fails
+    console.log('🚨 All data sources failed - using emergency fallback');
+    return {
+      categories: [
+        {
+          title: "Team Pinas Menu", 
+          display_order: 1,
+          items: [
+            { name: "Loading menu...", price: 0, display_order: 1, on_sale: false, is_new: false }
+          ]
+        }
+      ],
+      lastUpdated: new Date().toISOString(),
+      source: 'emergency-fallback'
+    };
   }
 
   /**
@@ -127,11 +150,11 @@ class CMSConnector {
   async handleAPIFailure(endpoint) {
     this.retryCount++;
     
-    if (this.retryCount <= this.config.refresh.maxRetries) {
+    if (this.retryCount <= 1) { // Only 1 retry for faster loading
       console.log(`Retrying ${endpoint} request (attempt ${this.retryCount})`);
-      // Wait before retry
+      // Shorter wait before retry
       await new Promise(resolve => 
-        setTimeout(resolve, this.config.refresh.retryInterval)
+        setTimeout(resolve, 500) // 500ms instead of longer interval
       );
       return this.getProducts(); // Retry
     }
@@ -225,9 +248,19 @@ class CMSConnector {
           localStorage.removeItem(key);
         }
       });
+      console.log('Cache cleared successfully');
     } catch (e) {
       console.warn('Failed to clear localStorage:', e);
     }
+  }
+
+  /**
+   * Invalidate cache and force refresh from server
+   */
+  async invalidateAndRefresh() {
+    this.clearCache();
+    // Force fresh data load
+    return await this.getProducts();
   }
 
   /**
