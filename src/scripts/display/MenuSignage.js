@@ -235,16 +235,25 @@ document.addEventListener("DOMContentLoaded", function () {
     slot3: document.querySelector(".CategorySlot[data-slot='3']")
   };
   
-  // Load settings in parallel but don't block menu loading
-  displaySettings.loadSettings().then(() => {
-    ROTATE_INTERVAL_MS = parseInt(displaySettings.settings.rotation_interval) || 6000;
-    console.log(`⚡ Settings loaded - rotation interval: ${ROTATE_INTERVAL_MS}ms`);
-  }).catch(error => {
-    console.warn('⚠️ Settings loading failed, using defaults:', error);
-    ROTATE_INTERVAL_MS = 6000; // Use default
-  });
+  // Load display settings for rotation timing
+  const loadDisplaySettings = async () => {
+    try {
+      const response = await fetch('/.netlify/functions/settings');
+      const data = await response.json();
+      const settings = data.settings || {};
+      
+      ROTATE_INTERVAL_MS = parseInt(settings.rotation_interval) || 6000;
+      console.log(`⚡ Rotation interval: ${ROTATE_INTERVAL_MS}ms`);
+    } catch (error) {
+      console.log('ℹ️ Using default rotation interval (6s)');
+      ROTATE_INTERVAL_MS = 6000;
+    }
+  };
   
-  console.log('🚀 Menu rendering starts immediately, settings load in parallel');
+  // Load settings in background - don't block menu
+  loadDisplaySettings();
+  
+  console.log('🚀 Menu rendering starts immediately');
 
   // Strip technical prefixes from names (e.g., "A Cola" -> "Cola")
   function cleanName(name) {
@@ -344,52 +353,44 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
 
-  // Initialize CMS connector with fallback config
-  const cmsConnector = window.CMSConnector ? new window.CMSConnector({
-    cache: { enabled: true, duration: 300000 },
-    api: { baseUrl: '/.netlify/functions', timeout: 10000 },
-    refresh: { interval: 300000 }, // 5 minutes
-    retries: { max: 3, delay: 1000 }
-  }) : null;
-  
-  // Load products from CMS or fallback to local JSON with timeout
+  // Simple direct API loading - no complex connectors needed
   const loadProducts = async () => {
     try {
-      if (cmsConnector) {
-        // Race against timeout to prevent hanging
-        const productPromise = cmsConnector.getProducts();
-        const timeoutPromise = new Promise((resolve) => {
-          setTimeout(() => resolve({ categories: [], error: 'timeout' }), 2000);
-        });
-        
-        const result = await Promise.race([productPromise, timeoutPromise]);
-        if (result.error === 'timeout') {
-          console.warn('⏰ CMS products timeout, falling back to local data');
-          throw new Error('CMS timeout');
-        }
-        return result;
-      } else {
-        // Fallback to original method if CMS connector not available
-        const response = await fetch("/assets/data/products.json");
-        return await response.json();
+      console.log('📡 Loading products from API...');
+      const response = await fetch('/.netlify/functions/products');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
+      
+      const data = await response.json();
+      console.log(`✅ Loaded ${data.categories?.length || 0} categories from API`);
+      return data;
+      
     } catch (error) {
-      console.warn('⚠️ Failed to load from CMS/local, using hardcoded fallback data');
-      // Hardcoded fallback for when everything fails
-      return {
-        categories: [
-          {
-            title: "Team Pinas Menu",
-            items: [
-              { name: "Proteineshake", price: 4.75 },
-              { name: "Cola", price: 2.65 },
-              { name: "Koffie", price: 2.15 },
-              { name: "Broodje frikandel", price: 2.65 },
-              { name: "Snickers", price: 1.65 }
-            ]
-          }
-        ]
-      };
+      console.warn('⚠️ API failed, trying local fallback:', error);
+      try {
+        const response = await fetch("/assets/data/products.json");
+        const data = await response.json();
+        console.log('✅ Loaded from local JSON fallback');
+        return data;
+      } catch (localError) {
+        console.warn('⚠️ Local fallback failed, using hardcoded data');
+        return {
+          categories: [
+            {
+              title: "Team Pinas Menu",
+              items: [
+                { name: "Proteineshake", price: 4.75 },
+                { name: "Cola", price: 2.65 },
+                { name: "Koffie", price: 2.15 },
+                { name: "Broodje frikandel", price: 2.65 },
+                { name: "Snickers", price: 1.65 }
+              ]
+            }
+          ]
+        };
+      }
     }
   };
 
@@ -842,46 +843,37 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Simplified footer loading - try immediately, no complex timeouts
-  const loadFooterWithTimeout = async () => {
-    // Check if settings are already loaded
-    if (displaySettings && displaySettings.settings && displaySettings.settings.footer_text) {
-      console.log('⚡ Footer settings already loaded, updating content');
-      loadFooterSettings();
-      return;
-    }
-    
-    // Quick check without blocking - just try once
+  // Simple footer loading - just fetch and update if available
+  const loadFooterSettings = async () => {
     try {
-      if (displaySettings) {
-        // Give settings just 300ms to load, then continue with HTML fallback
-        const loadPromise = displaySettings.loadSettings().then(() => {
-          console.log('⚡ Footer settings loaded, updating content');
-          if (displaySettings.settings && displaySettings.settings.footer_text) {
-            loadFooterSettings();
-          }
-        });
+      console.log('📡 Loading footer settings from API...');
+      const response = await fetch('/.netlify/functions/settings');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const settings = data.settings || {};
+      
+      if (settings.footer_text && settings.footer_text.trim()) {
+        console.log('✅ Got footer content from API, updating...');
+        footerSpeed = parseInt(settings.footer_speed) || 30;
+        footerText = settings.footer_text.trim();
+        footerContinuous = settings.footer_continuous !== false;
         
-        // Don't await - let it load in background, HTML content is already visible
-        setTimeout(() => {
-          if (displaySettings.settings && displaySettings.settings.footer_text) {
-            console.log('⚡ Footer settings available after quick check');
-            loadFooterSettings();
-          } else {
-            console.log('ℹ️ Using HTML footer content (database not loaded yet)');
-          }
-        }, 300);
-        
+        // Update the footer with database content
+        updateFooterContent();
       } else {
-        console.log('ℹ️ No displaySettings available, using HTML footer content');
+        console.log('ℹ️ No footer content in API, keeping HTML content');
       }
     } catch (error) {
-      console.log('ℹ️ Footer settings loading failed, using HTML content:', error);
+      console.log('ℹ️ Footer API failed, keeping HTML content:', error);
     }
   };
 
-  // Start loading immediately - run async without blocking
-  loadFooterWithTimeout();
+  // Start loading footer settings in background
+  loadFooterSettings();
 
   // Restart the animation when it ends to simulate an infinite scroll
   if (scrollingTextSpan) {
