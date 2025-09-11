@@ -96,20 +96,17 @@ document.addEventListener("DOMContentLoaded", function () {
 class DisplaySettings {
   constructor() {
     this.settings = {};
-    this.loadSettings();
+    // Settings will be loaded via loadAllData() for better performance
   }
 
-  async loadSettings() {
+  // Apply settings from loadAllData() 
+  applySettings(settingsData) {
     try {
-      console.log('⚙️ Loading settings using new API service...');
-      
-      // Use the global API service with proper retry logic
-      const data = await window.apiService.loadSettings();
-      this.settings = data.settings || {};
-      
-      console.log('✅ Settings loaded with retry logic');
+      console.log('⚙️ Applying settings from concurrent load...');
+      this.settings = settingsData.settings || {};
+      console.log('✅ Settings applied successfully');
     } catch (error) {
-      console.warn('⚠️ Settings API failed, using defaults:', error.message);
+      console.warn('⚠️ Settings application failed, using defaults:', error.message);
       // Use defaults on error  
       this.settings = {
         display_columns: 2,
@@ -320,17 +317,70 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // Global functions to apply settings and footer from loadAllData()
+  function applySettings(settingsData) {
+    if (displaySettings && settingsData) {
+      displaySettings.applySettings(settingsData);
+    }
+  }
 
-  // CLEAN API INTEGRATION: Use new API service with proper retry logic
-  const loadProducts = async () => {
+  function applyFooterSettings(footerData) {
+    if (footerData && footerData.footer_text && footerData.footer_text.trim()) {
+      console.log('✅ Applying footer data from concurrent load...');
+      
+      // Map footer API response to display properties
+      footerSpeed = parseInt(footerData.scroll_speed) || 30;
+      footerText = footerData.footer_text.trim().replace('<separator>', '||');
+      footerContinuous = footerData.scroll_direction !== 'static';
+      
+      // Apply footer text color if provided
+      if (footerData.text_color) {
+        document.body.style.setProperty('--footer-text-color', footerData.text_color);
+        console.log(`🎨 Applied footer text color: ${footerData.text_color}`);
+      }
+      
+      // Apply footer background color if provided
+      if (footerData.background_color) {
+        document.body.style.setProperty('--footer-bg-color', footerData.background_color);
+        console.log(`🎨 Applied footer background color: ${footerData.background_color}`);
+      }
+      
+      // Update footer content
+      const scrollingTextSpan = document.querySelector('.ScrollingText span');
+      if (scrollingTextSpan) {
+        // Replace separator with image tags for proper display
+        const formattedText = footerText.replace(/\|\|/g, 
+          ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ');
+        scrollingTextSpan.innerHTML = formattedText;
+        console.log('📝 Footer content updated from API');
+        
+        // Restart animation with new content
+        setAnimationDuration();
+      }
+    }
+  }
+
+  // OPTIMIZED: Load all data concurrently using loadAll()
+  const loadAllData = async () => {
     try {
-      console.log('📡 Loading products using new API service...');
+      console.log('📡 Loading products, settings, and footer concurrently...');
       
-      // Use the global API service with exponential backoff retry
-      const data = await window.apiService.loadProducts();
+      // Use the global API service to load everything in parallel
+      const { products, settings, footer } = await window.apiService.loadAll();
       
-      console.log(`✅ Loaded ${data.categories?.length || 0} categories with retry logic`);
-      return data;
+      console.log(`✅ Loaded ${products.categories?.length || 0} categories, settings, and footer data concurrently`);
+      
+      // Process settings
+      if (settings) {
+        applySettings(settings);
+      }
+      
+      // Process footer
+      if (footer) {
+        applyFooterSettings(footer);
+      }
+      
+      return products;
       
     } catch (error) {
       console.error('❌ All API attempts failed:', error.message);
@@ -346,7 +396,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   };
 
-  loadProducts()
+  loadAllData()
     .then((data) => {
       console.log("🎯 EMERGENCY DEBUG: Initial data loaded:", data);
       const categories = Array.isArray(data.categories) ? data.categories : [];
@@ -542,7 +592,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const refreshData = async () => {
         try {
           console.log("🔄 Refreshing data from direct API...");
-          const newData = await loadProducts();
+          const newData = await loadAllData();
           
           if (newData && newData.categories && newData.categories.length > 0) {
             const newCategories = Array.isArray(newData.categories) ? newData.categories : [];
@@ -735,7 +785,7 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   // Start loading footer settings in background
-  loadFooterSettings();
+  // Footer settings will be loaded via loadAllData() for better performance
 
   // Restart the animation when it ends to simulate an infinite scroll
   if (scrollingTextSpan) {
