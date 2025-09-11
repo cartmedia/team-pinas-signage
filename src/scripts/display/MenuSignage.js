@@ -354,8 +354,10 @@ document.addEventListener("DOMContentLoaded", function () {
         scrollingTextSpan.innerHTML = formattedText;
         console.log('📝 Footer content updated from API');
         
-        // Restart animation with new content
-        setAnimationDuration();
+        // Restart animation with new content (if function is available)
+        if (typeof setAnimationDuration === 'function') {
+          setAnimationDuration();
+        }
       }
     }
   }
