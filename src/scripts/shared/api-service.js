@@ -1,4 +1,4 @@
-// Clean API Service for Team Pinas Signage
+// Clean API Service for Team Pinas Signage (with footer support)
 // Replaces complex CMS Connector with simple, reliable API calls
 
 class APIService {
