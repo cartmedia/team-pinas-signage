@@ -68,9 +68,24 @@ async function getSettings(client, headers) {
 
   const result = await client.query(settingsQuery);
   
-  // Transform to key-value object
+  // Footer-related fields to exclude after migration
+  const footerFields = [
+    'footer_text', 'scroll_speed', 'text_color', 'background_color', 
+    'font_size', 'scroll_direction', 'divider_image', 'is_active',
+    'footer_enabled', 'footer_config', 'footer_settings',
+    // Additional footer fields from database
+    'footer_bg_color', 'footer_text_color_custom', 'footer_speed',
+    'footer_continuous', 'footer_text_color'
+  ];
+  
+  // Transform to key-value object, excluding footer fields
   const settings = {};
   result.rows.forEach(row => {
+    // Skip footer-related fields - they are now managed by the footer endpoint
+    if (footerFields.includes(row.setting_key)) {
+      return;
+    }
+    
     let value = row.setting_value;
     
     // Parse based on data type
@@ -108,29 +123,17 @@ async function updateSettings(client, headers, data) {
   const { 
     display_columns, 
     header_height, 
-    footer_height, 
-    footer_text, 
-    footer_speed, 
-    footer_continuous,
     organization_name,
-    rotation_interval,
-    footer_text_color,
-    footer_bg_color,
-    footer_text_color_custom
+    rotation_interval
   } = data;
   
+  // After migration, only non-footer settings can be updated via settings endpoint
+  // Footer-related updates should be made via the /footer endpoint
   const updates = [
     { key: 'display_columns', value: display_columns, type: 'number' },
     { key: 'header_height', value: header_height, type: 'number' },
-    { key: 'footer_height', value: footer_height, type: 'number' },
-    { key: 'footer_text', value: footer_text, type: 'string' },
-    { key: 'footer_speed', value: footer_speed, type: 'number' },
-    { key: 'footer_continuous', value: footer_continuous, type: 'boolean' },
     { key: 'organization_name', value: organization_name, type: 'string' },
-    { key: 'rotation_interval', value: rotation_interval, type: 'number' },
-    { key: 'footer_text_color', value: footer_text_color, type: 'string' },
-    { key: 'footer_bg_color', value: footer_bg_color, type: 'string' },
-    { key: 'footer_text_color_custom', value: footer_text_color_custom, type: 'string' }
+    { key: 'rotation_interval', value: rotation_interval, type: 'number' }
   ];
 
   // Update or insert each setting
@@ -148,12 +151,6 @@ async function updateSettings(client, headers, data) {
     }
   }
 
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({
-      message: 'Settings updated successfully',
-      updated: updates.length
-    })
-  };
+  // Return the updated settings (same format as GET)
+  return await getSettings(client, headers);
 }

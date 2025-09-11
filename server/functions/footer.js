@@ -34,6 +34,11 @@ function validateFooterData(data, isUpdate = false) {
     }
   }
   
+  // footer_text length validation
+  if (data.footer_text !== undefined && typeof data.footer_text === 'string' && data.footer_text.length > 2000) {
+    errors.push('footer_text must not exceed 2000 characters');
+  }
+  
   // text_color validation (optional, but must be valid hex when provided)
   if (data.text_color !== undefined) {
     if (typeof data.text_color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(data.text_color)) {
@@ -50,15 +55,15 @@ function validateFooterData(data, isUpdate = false) {
   
   // scroll_speed validation (optional, but must be in range when provided)
   if (data.scroll_speed !== undefined) {
-    if (typeof data.scroll_speed !== 'number' || data.scroll_speed < 1 || data.scroll_speed > 200) {
-      errors.push('scroll_speed must be a number between 1 and 200');
+    if (typeof data.scroll_speed !== 'number' || data.scroll_speed < 10 || data.scroll_speed > 100) {
+      errors.push('scroll_speed must be a number between 10 and 100');
     }
   }
   
   // scroll_direction validation (optional, but must be valid value when provided)
   if (data.scroll_direction !== undefined) {
-    if (!['left', 'right', 'static'].includes(data.scroll_direction)) {
-      errors.push('scroll_direction must be one of: left, right, static');
+    if (!['continuous', 'discrete', 'static'].includes(data.scroll_direction)) {
+      errors.push('scroll_direction must be one of: continuous, discrete, static');
     }
   }
   
@@ -73,6 +78,8 @@ function validateFooterData(data, isUpdate = false) {
   if (data.divider_image !== undefined) {
     if (typeof data.divider_image !== 'string' || data.divider_image.length === 0) {
       errors.push('divider_image must be a non-empty string when provided');
+    } else if (data.divider_image.length > 255) {
+      errors.push('divider_image must not exceed 255 characters');
     }
   }
   
@@ -146,6 +153,7 @@ async function handlePost(client, requestBody) {
         headers,
         body: JSON.stringify({
           error: 'Validation failed',
+          message: validationErrors[0] || 'Request validation failed',
           details: validationErrors
         })
       };
@@ -176,7 +184,7 @@ async function handlePost(client, requestBody) {
         data.text_color || '#101010',
         data.background_color || null,
         data.scroll_speed || 30,
-        data.scroll_direction || 'left',
+        data.scroll_direction || 'continuous',
         data.divider_image || 'assets/images/pinas_kroon.svg',
         data.font_size || '3vh'
       ];
@@ -240,6 +248,7 @@ async function handlePut(client, requestBody) {
         headers,
         body: JSON.stringify({
           error: 'Validation failed',
+          message: validationErrors[0] || 'Request validation failed',
           details: validationErrors
         })
       };

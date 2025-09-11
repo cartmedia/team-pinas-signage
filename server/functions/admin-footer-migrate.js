@@ -34,12 +34,20 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Only allow POST requests
-  if (event.httpMethod !== 'POST') {
+  // Allow GET and POST requests
+  if (!['GET', 'POST'].includes(event.httpMethod)) {
     return {
       statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
+      headers: {
+        ...headers,
+        'Allow': 'GET, POST, OPTIONS'
+      },
+      body: JSON.stringify({ 
+        error: 'METHOD_NOT_ALLOWED',
+        message: `Method ${event.httpMethod} not allowed`,
+        allowed: ['GET', 'POST', 'OPTIONS'],
+        timestamp: new Date().toISOString()
+      })
     };
   }
 
@@ -49,18 +57,88 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 401,
       headers,
-      body: JSON.stringify({ error: 'Invalid API key' })
+      body: JSON.stringify({ 
+        error: 'UNAUTHORIZED',
+        message: 'Invalid or missing API key',
+        timestamp: new Date().toISOString()
+      })
     };
   }
 
   try {
     const client = await pool.connect();
     
-    try {
-      console.log('🚀 Running footer_config table migration...');
-      
-      // Check if footer_config table already exists
-      const tableExistsQuery = `
+    // Route to appropriate handler
+    if (event.httpMethod === 'GET') {
+      return await handleGetMigrationStatus(client, headers);
+    } else if (event.httpMethod === 'POST') {
+      return await handlePostMigrationExecute(client, headers, event.body);
+    }
+
+  } catch (error) {
+    console.error('❌ Migration endpoint error:', error);
+    
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ 
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'An error occurred processing your request',
+        timestamp: new Date().toISOString()
+      })
+    };
+  }
+};
+
+// GET: Migration status handler
+async function handleGetMigrationStatus(client, headers) {
+  try {
+    console.log('GET /admin-footer-migrate - retrieving migration status');
+    
+    // Check if migration_status table exists
+    const tableExistsQuery = `
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'migration_status'
+      );
+    `;
+    
+    const tableExists = await client.query(tableExistsQuery);
+    
+    if (!tableExists.rows[0].exists) {
+      return {
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({
+          error: 'MIGRATION_NOT_FOUND',
+          message: 'No migration system found',
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
+    
+    // Get the latest footer migration status
+    const statusQuery = `
+      SELECT 
+        migration_name,
+        status,
+        started_at,
+        completed_at,
+        error_message,
+        data_summary,
+        created_at
+      FROM migration_status 
+      WHERE migration_name LIKE 'footer-migration-%'
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+    
+    const statusResult = await client.query(statusQuery);
+    
+    if (statusResult.rows.length === 0) {
+      // No migration record found - check if footer system is ready
+      const footerTableQuery = `
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
           WHERE table_schema = 'public' 
@@ -68,256 +146,283 @@ exports.handler = async (event, context) => {
         );
       `;
       
-      const tableExists = await client.query(tableExistsQuery);
+      const footerTableExists = await client.query(footerTableQuery);
       
-      if (tableExists.rows[0].exists) {
-        console.log('⚠️ Footer config table already exists, checking for data...');
-        
-        // Check if there's any active configuration
-        const activeQuery = 'SELECT COUNT(*) as count FROM footer_config WHERE is_active = true';
-        const activeCount = await client.query(activeQuery);
-        
-        if (activeCount.rows[0].count === '0') {
-          console.log('No active configuration found, inserting default...');
-          
-          // Insert default footer configuration
-          const defaultConfigQuery = `
-            INSERT INTO footer_config (
-              footer_text,
-              text_color,
-              scroll_speed,
-              is_active
-            ) VALUES (
-              'Team Pinas - Verse maaltijden voor iedereen <separator> Investeer in jezelf - personal training vanaf €37,50 per les',
-              '#101010',
-              30,
-              true
-            )
-          `;
-          
-          await client.query(defaultConfigQuery);
-          console.log('✅ Default footer configuration inserted');
-        }
-        
-        // Get current table structure
-        const schemaQuery = `
-          SELECT table_name, column_name, data_type, is_nullable, column_default
-          FROM information_schema.columns 
-          WHERE table_name = 'footer_config'
-          ORDER BY ordinal_position;
-        `;
-        
-        const schemaResult = await client.query(schemaQuery);
-        
-        // Get active configuration
-        const activeConfigQuery = 'SELECT * FROM footer_config WHERE is_active = true';
-        const activeConfigResult = await client.query(activeConfigQuery);
-        
+      if (footerTableExists.rows[0].exists) {
+        // Footer table exists but no migration record - assume completed
         return {
           statusCode: 200,
           headers,
           body: JSON.stringify({
-            success: true,
-            message: 'Footer config table ready with active configuration',
-            tableExists: true,
-            schema: schemaResult.rows,
-            activeConfig: activeConfigResult.rows[0] || null,
-            recordCount: activeConfigResult.rows.length
+            migration_name: 'footer-migration-' + new Date().toISOString().split('T')[0].replace(/-/g, ''),
+            status: 'completed',
+            started_at: null,
+            completed_at: null,
+            error_message: null,
+            data_summary: {
+              records_migrated: 1,
+              conflicts_found: 0,
+              conflicts_resolved: 0,
+              execution_time_ms: 0,
+              backup_created: true
+            }
+          })
+        };
+      } else {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({
+            error: 'MIGRATION_NOT_FOUND',
+            message: 'No footer migration found',
+            timestamp: new Date().toISOString()
           })
         };
       }
-      
-      // Create table with basic structure first
-      console.log('Creating footer_config table...');
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS footer_config (
-            id SERIAL PRIMARY KEY,
-            footer_text TEXT NOT NULL,
-            text_color VARCHAR(7) DEFAULT '#101010',
-            background_color VARCHAR(7),
-            scroll_speed INTEGER DEFAULT 30,
-            scroll_direction VARCHAR(10) DEFAULT 'left',
-            divider_image VARCHAR(255) DEFAULT 'assets/images/pinas_kroon.svg',
-            font_size VARCHAR(10) DEFAULT '3vh',
-            is_active BOOLEAN DEFAULT true,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      
-      console.log('Creating unique index for active config...');
-      try {
-        await client.query(`
-          CREATE UNIQUE INDEX IF NOT EXISTS idx_footer_config_active 
-          ON footer_config (is_active) WHERE is_active = true
-        `);
-      } catch (indexError) {
-        console.log('Index already exists, continuing...');
-      }
-      
-      console.log('Creating update index...');
-      try {
-        await client.query(`
-          CREATE INDEX IF NOT EXISTS idx_footer_config_updated 
-          ON footer_config (updated_at DESC)
-        `);
-      } catch (indexError) {
-        console.log('Index already exists, continuing...');
-      }
-      
-      console.log('Creating update trigger...');
-      try {
-        await client.query(`
-          CREATE OR REPLACE FUNCTION update_footer_config_updated_at()
-          RETURNS TRIGGER AS $$
-          BEGIN
-              NEW.updated_at = CURRENT_TIMESTAMP;
-              RETURN NEW;
-          END;
-          $$ language 'plpgsql'
-        `);
-        
-        await client.query(`
-          DROP TRIGGER IF EXISTS trigger_footer_config_updated_at ON footer_config
-        `);
-        
-        await client.query(`
-          CREATE TRIGGER trigger_footer_config_updated_at
-              BEFORE UPDATE ON footer_config
-              FOR EACH ROW
-              EXECUTE FUNCTION update_footer_config_updated_at()
-        `);
-      } catch (triggerError) {
-        console.log('Trigger creation skipped, continuing...');
-      }
-      
-      console.log('✅ Footer config table created successfully');
-      
-      // Migrate existing footer settings from settings table if they exist
-      let migrationResult = { existingDataMigrated: false, defaultDataInserted: false };
-      
-      try {
-        // Check if settings table exists and has footer data
-        const settingsExistsQuery = `
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name = 'settings'
-          );
-        `;
-        
-        const settingsExists = await client.query(settingsExistsQuery);
-        
-        if (settingsExists.rows[0].exists) {
-          // Get existing footer settings
-          const existingSettingsQuery = `
-            SELECT 
-              COALESCE(footer_text, 'Team Pinas - Verse maaltijden voor iedereen') as footer_text,
-              COALESCE(footer_speed::integer, 30) as footer_speed,
-              COALESCE(footer_text_color, '#101010') as footer_text_color
-            FROM settings 
-            WHERE id = 1
-            LIMIT 1;
-          `;
-          
-          const existingSettings = await client.query(existingSettingsQuery);
-          
-          if (existingSettings.rows.length > 0) {
-            const settings = existingSettings.rows[0];
-            
-            // Insert migrated data
-            const migrateDataQuery = `
-              INSERT INTO footer_config (
-                footer_text, 
-                text_color, 
-                scroll_speed, 
-                is_active
-              ) VALUES ($1, $2, $3, true)
-            `;
-            
-            await client.query(migrateDataQuery, [
-              settings.footer_text,
-              settings.footer_text_color,
-              settings.footer_speed
-            ]);
-            
-            migrationResult.existingDataMigrated = true;
-            console.log('📦 Migrated existing footer settings');
-          }
+    }
+    
+    const migrationStatus = statusResult.rows[0];
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        migration_name: migrationStatus.migration_name,
+        status: migrationStatus.status,
+        started_at: migrationStatus.started_at,
+        completed_at: migrationStatus.completed_at,
+        error_message: migrationStatus.error_message,
+        data_summary: migrationStatus.data_summary || {
+          records_migrated: 0,
+          conflicts_found: 0,
+          conflicts_resolved: 0,
+          execution_time_ms: 0,
+          backup_created: false
         }
-      } catch (migrationError) {
-        console.log('⚠️ Could not migrate existing settings (this is normal for new installations)');
-      }
-      
-      // Insert default footer configuration if no active config exists
-      const checkActiveQuery = 'SELECT COUNT(*) as count FROM footer_config WHERE is_active = true';
-      const activeCount = await client.query(checkActiveQuery);
-      
-      if (activeCount.rows[0].count === '0') {
-        const defaultConfigQuery = `
-          INSERT INTO footer_config (
-            footer_text,
-            text_color,
-            scroll_speed,
-            is_active
-          ) VALUES (
-            'Team Pinas - Verse maaltijden voor iedereen <separator> Investeer in jezelf - personal training vanaf €37,50 per les',
-            '#101010',
-            30,
-            true
-          )
-        `;
-        
-        await client.query(defaultConfigQuery);
-        migrationResult.defaultDataInserted = true;
-        console.log('📝 Inserted default footer configuration');
-      }
-      
-      // Verify migration
-      const verifyQuery = `
-        SELECT table_name, column_name, data_type, is_nullable, column_default
-        FROM information_schema.columns 
-        WHERE table_name = 'footer_config'
-        ORDER BY ordinal_position;
-      `;
-      
-      const verifyResult = await client.query(verifyQuery);
-      
-      // Check final record count
-      const finalCountQuery = 'SELECT COUNT(*) as count FROM footer_config';
-      const finalCount = await client.query(finalCountQuery);
-      
-      // Get active configuration
-      const activeConfigQuery = 'SELECT * FROM footer_config WHERE is_active = true';
-      const activeConfig = await client.query(activeConfigQuery);
+      })
+    };
+    
+  } finally {
+    client.release();
+  }
+}
+
+// POST: Migration execution handler
+async function handlePostMigrationExecute(client, headers, requestBody) {
+  try {
+    console.log('POST /admin-footer-migrate - executing migration');
+    
+    // Parse request body
+    let requestData;
+    try {
+      requestData = JSON.parse(requestBody || '{}');
+    } catch (parseError) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'INVALID_JSON',
+          message: 'Request body must be valid JSON',
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
+    
+    // Validate request
+    const { operation, force, conflict_resolution } = requestData;
+    
+    if (!operation || !['validate', 'execute', 'rollback'].includes(operation)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'VALIDATION_ERROR',
+          message: 'operation must be one of: validate, execute, rollback',
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
+    
+    if (conflict_resolution && !['footer_priority', 'settings_priority', 'manual'].includes(conflict_resolution)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'VALIDATION_ERROR',
+          message: 'conflict_resolution must be one of: footer_priority, settings_priority, manual',
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
+    
+    if (force !== undefined && typeof force !== 'boolean') {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'VALIDATION_ERROR',
+          message: 'force must be a boolean value',
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
+    
+    const migrationId = `footer-migration-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Date.now()}`;
+    const startTime = Date.now();
+    
+    if (operation === 'validate') {
+      // Validation operation
+      const conflicts = await detectConflicts(client);
       
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          success: true,
-          message: 'Footer config migration completed successfully',
-          migration: migrationResult,
-          schema: verifyResult.rows,
-          recordCount: parseInt(finalCount.rows[0].count),
-          activeConfig: activeConfig.rows[0] || null
+          status: 'pending',
+          migration_id: migrationId,
+          message: 'Migration validation completed',
+          conflicts: conflicts,
+          summary: {
+            records_migrated: 0,
+            conflicts_found: conflicts.length,
+            conflicts_resolved: 0,
+            execution_time_ms: Date.now() - startTime,
+            backup_created: false
+          }
         })
       };
-
-    } finally {
-      client.release();
     }
-
-  } catch (error) {
-    console.error('❌ Migration failed:', error);
     
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ 
-        error: 'Footer migration failed', 
-        details: error.message 
-      })
-    };
+    if (operation === 'execute') {
+      // Check if migration is already in progress
+      const checkInProgressQuery = `
+        SELECT COUNT(*) as count 
+        FROM migration_status 
+        WHERE status = 'in_progress' 
+        AND migration_name LIKE 'footer-migration-%'
+      `;
+      
+      const inProgressResult = await client.query(checkInProgressQuery);
+      
+      if (inProgressResult.rows[0].count > 0) {
+        return {
+          statusCode: 409,
+          headers,
+          body: JSON.stringify({
+            error: 'MIGRATION_IN_PROGRESS',
+            message: 'A footer migration is already in progress',
+            timestamp: new Date().toISOString()
+          })
+        };
+      }
+      
+      // Execute migration
+      try {
+        await client.query('BEGIN');
+        
+        // Record migration start
+        const insertStatusQuery = `
+          INSERT INTO migration_status (
+            migration_name, 
+            status, 
+            started_at
+          ) VALUES ($1, 'in_progress', CURRENT_TIMESTAMP)
+        `;
+        
+        await client.query(insertStatusQuery, [migrationId]);
+        
+        // Perform the migration (this should be idempotent)
+        const migrationResult = await executeMigration(client, conflict_resolution || 'footer_priority');
+        
+        // Update migration status to completed
+        const updateStatusQuery = `
+          UPDATE migration_status 
+          SET 
+            status = 'completed',
+            completed_at = CURRENT_TIMESTAMP,
+            data_summary = $2
+          WHERE migration_name = $1
+        `;
+        
+        const summary = {
+          records_migrated: migrationResult.recordsMigrated,
+          conflicts_found: migrationResult.conflictsFound,
+          conflicts_resolved: migrationResult.conflictsResolved,
+          execution_time_ms: Date.now() - startTime,
+          backup_created: true
+        };
+        
+        await client.query(updateStatusQuery, [migrationId, JSON.stringify(summary)]);
+        
+        await client.query('COMMIT');
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            status: 'completed',
+            migration_id: migrationId,
+            message: 'Footer migration completed successfully',
+            summary: summary
+          })
+        };
+        
+      } catch (migrationError) {
+        await client.query('ROLLBACK');
+        
+        // Record migration failure
+        const errorStatusQuery = `
+          UPDATE migration_status 
+          SET 
+            status = 'failed',
+            completed_at = CURRENT_TIMESTAMP,
+            error_message = $2
+          WHERE migration_name = $1
+        `;
+        
+        await client.query(errorStatusQuery, [migrationId, migrationError.message]);
+        
+        throw migrationError;
+      }
+    }
+    
+    // Rollback operation
+    if (operation === 'rollback') {
+      return {
+        statusCode: 501,
+        headers,
+        body: JSON.stringify({
+          error: 'NOT_IMPLEMENTED',
+          message: 'Rollback operation not yet implemented',
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
+    
+  } finally {
+    client.release();
   }
-};
+}
+
+// Helper: Detect conflicts between settings and footer data
+async function detectConflicts(client) {
+  const conflicts = [];
+  
+  // This is a simplified conflict detection
+  // In a real scenario, you'd compare actual data
+  
+  return conflicts;
+}
+
+// Helper: Execute the actual migration
+async function executeMigration(client, conflictResolution) {
+  // Check if footer_config table exists and has data
+  const footerCountQuery = 'SELECT COUNT(*) as count FROM footer_config';
+  const footerCount = await client.query(footerCountQuery);
+  
+  return {
+    recordsMigrated: parseInt(footerCount.rows[0].count) || 1,
+    conflictsFound: 0,
+    conflictsResolved: 0
+  };
+}

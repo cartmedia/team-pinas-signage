@@ -149,7 +149,7 @@ async function requireAuth(event) {
 }
 
 // Error response helper
-function createAuthErrorResponse(statusCode, error) {
+function createAuthErrorResponse(statusCode, error, message = null) {
   return {
     statusCode,
     headers: {
@@ -158,7 +158,11 @@ function createAuthErrorResponse(statusCode, error) {
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ error })
+    body: JSON.stringify({
+      error,
+      message: message || error,
+      timestamp: new Date().toISOString()
+    })
   };
 }
 

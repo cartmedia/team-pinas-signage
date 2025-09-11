@@ -25,10 +25,11 @@ Team Pinas Signage is a digital menu display system with Neon PostgreSQL databas
 
 **API Layer (`/server/functions/`)**
 - **Public APIs** (no auth): `/products`, `/settings`, `/footer` - consumed by signage display
-- **Admin APIs** (secured): `/admin-products`, `/admin-categories`, `/footer` (POST/PUT) - used by CMS
+- **Admin APIs** (secured): `/admin-products`, `/admin-categories`, `/footer` (POST/PUT), `/admin-footer-migrate` - used by CMS
 - Authentication via API key (`X-API-Key` header) or JWT tokens
 - Neon PostgreSQL connection with optimized connection pooling
 - 5-minute response caching for performance
+- **Footer Migration**: Active feature (004-footer-content-migration) to centralize footer data
 
 **Admin CMS (`/public/admin.html` + `/src/scripts/admin/admin.js`)**
 - Full-featured management dashboard for categories and products
@@ -74,16 +75,21 @@ Team Pinas Signage is a digital menu display system with Neon PostgreSQL databas
 Categories and products tables with relationships:
 - Categories: `id`, `title`, `display_order`, `created_at`, `updated_at`
 - Products: `id`, `name`, `price`, `category_id`, `display_order`, `on_sale`, `is_new`
+- Footer Config: `id`, `footer_text`, `scroll_speed`, `text_color`, `background_color`, `font_size`, `scroll_direction`, `divider_image`, `is_active`
+- Migration Status: `id`, `migration_name`, `status`, `started_at`, `completed_at`, `error_message`, `data_summary`
 
 ### API Endpoints
 
 **Public APIs** (used by signage):
 - `GET /.netlify/functions/products` - Returns categorized menu items
 - `GET /.netlify/functions/settings` - Returns app settings (org name, etc.)
+- `GET /.netlify/functions/footer` - Returns footer configuration and content
 
 **Admin APIs** (require authentication):
 - `GET/POST/PUT/DELETE /.netlify/functions/admin-categories`
 - `GET/POST/PUT/DELETE /.netlify/functions/admin-products`
+- `PUT /.netlify/functions/footer` - Update footer configuration
+- `GET/POST /.netlify/functions/admin-footer-migrate` - Footer migration management
 
 ### Directory Structure
 

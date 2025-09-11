@@ -1,0 +1,479 @@
+openapi: 3.0.3
+info:
+  title: Footer Migration API
+  description: API contracts for footer content migration from settings to footer endpoint
+  version: 1.0.0
+  contact:
+    name: Team Pinas Signage
+    url: https://github.com/cartmedia/team-pinas-signage
+
+servers:
+  - url: /.netlify/functions
+    description: Netlify Functions endpoint
+
+paths:
+  /footer:
+    get:
+      summary: Get footer configuration
+      description: Retrieve current footer settings from dedicated footer endpoint
+      operationId: getFooterConfig
+      responses:
+        '200':
+          description: Footer configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterConfig'
+              examples:
+                default:
+                  summary: Standard footer configuration
+                  value:
+                    footer_text: "Investeer in jezelf of in je kind – personal training vanaf €37,50 per les||Interesse? Meld je bij de bar"
+                    scroll_speed: 45
+                    text_color: "#101010"
+                    background_color: "#c19d6c"
+                    font_size: "3vh"
+                    scroll_direction: "continuous"
+                    divider_image: "assets/images/pinas_kroon.svg"
+                    is_active: true
+        '404':
+          description: Footer configuration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update footer configuration
+      description: Update footer settings (admin only)
+      operationId: updateFooterConfig
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FooterConfigUpdate'
+      responses:
+        '200':
+          description: Footer configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterConfig'
+        '400':
+          description: Invalid footer configuration data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin-footer-migrate:
+    post:
+      summary: Execute footer migration
+      description: Migrate footer data from settings endpoint to footer endpoint
+      operationId: migrateFooterContent
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MigrationRequest'
+      responses:
+        '200':
+          description: Migration completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResponse'
+        '202':
+          description: Migration started (async operation)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResponse'
+        '400':
+          description: Invalid migration request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Migration already in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Migration failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: Get migration status
+      description: Check the status of footer migration process
+      operationId: getMigrationStatus
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Migration status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationStatus'
+        '401':
+          description: Unauthorized - invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No migration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /settings:
+    get:
+      summary: Get system settings (footer data excluded)
+      description: Retrieve system settings without footer data after migration
+      operationId: getSettings
+      responses:
+        '200':
+          description: Settings retrieved successfully (footer data excluded)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettings'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update system settings
+      description: Update system settings (footer updates redirected to footer endpoint)
+      operationId: updateSettings
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemSettingsUpdate'
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettings'
+        '400':
+          description: Invalid settings data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    FooterConfig:
+      type: object
+      required:
+        - footer_text
+        - scroll_speed
+        - text_color
+        - background_color
+        - font_size
+        - scroll_direction
+        - divider_image
+        - is_active
+      properties:
+        footer_text:
+          type: string
+          maxLength: 2000
+          description: Footer content with separator markers (||)
+          example: "Team Pinas - Verse maaltijden||Personal training vanaf €37,50"
+        scroll_speed:
+          type: integer
+          minimum: 10
+          maximum: 100
+          description: Animation speed in seconds
+          example: 45
+        text_color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Hex color code for text
+          example: "#101010"
+        background_color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Hex color code for background
+          example: "#c19d6c"
+        font_size:
+          type: string
+          pattern: '^[0-9]+(vh|px|em|rem)$'
+          description: CSS font size value
+          example: "3vh"
+        scroll_direction:
+          type: string
+          enum: [continuous, discrete, static]
+          description: Animation type
+          example: "continuous"
+        divider_image:
+          type: string
+          maxLength: 255
+          description: Path to separator image
+          example: "assets/images/pinas_kroon.svg"
+        is_active:
+          type: boolean
+          description: Enable/disable footer display
+          example: true
+
+    FooterConfigUpdate:
+      type: object
+      properties:
+        footer_text:
+          type: string
+          maxLength: 2000
+        scroll_speed:
+          type: integer
+          minimum: 10
+          maximum: 100
+        text_color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        background_color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        font_size:
+          type: string
+          pattern: '^[0-9]+(vh|px|em|rem)$'
+        scroll_direction:
+          type: string
+          enum: [continuous, discrete, static]
+        divider_image:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+
+    MigrationRequest:
+      type: object
+      required:
+        - operation
+      properties:
+        operation:
+          type: string
+          enum: [validate, execute, rollback]
+          description: Migration operation to perform
+          example: "execute"
+        force:
+          type: boolean
+          description: Force migration even if conflicts exist
+          example: false
+        conflict_resolution:
+          type: string
+          enum: [footer_priority, settings_priority, manual]
+          description: How to resolve data conflicts
+          example: "footer_priority"
+
+    MigrationResponse:
+      type: object
+      required:
+        - status
+        - migration_id
+      properties:
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+          example: "completed"
+        migration_id:
+          type: string
+          description: Unique migration identifier
+          example: "footer-migration-20250911"
+        message:
+          type: string
+          description: Human-readable status message
+          example: "Footer migration completed successfully"
+        summary:
+          $ref: '#/components/schemas/MigrationSummary'
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataConflict'
+
+    MigrationStatus:
+      type: object
+      required:
+        - migration_name
+        - status
+      properties:
+        migration_name:
+          type: string
+          example: "footer-migration-20250911"
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed, rolled_back]
+          example: "completed"
+        started_at:
+          type: string
+          format: date-time
+          example: "2025-09-11T10:30:00Z"
+        completed_at:
+          type: string
+          format: date-time
+          example: "2025-09-11T10:30:15Z"
+        error_message:
+          type: string
+          nullable: true
+        data_summary:
+          $ref: '#/components/schemas/MigrationSummary'
+
+    MigrationSummary:
+      type: object
+      properties:
+        records_migrated:
+          type: integer
+          example: 1
+        conflicts_found:
+          type: integer
+          example: 0
+        conflicts_resolved:
+          type: integer
+          example: 0
+        execution_time_ms:
+          type: integer
+          example: 1500
+        backup_created:
+          type: boolean
+          example: true
+
+    DataConflict:
+      type: object
+      required:
+        - field
+        - settings_value
+        - footer_value
+      properties:
+        field:
+          type: string
+          example: "footer_text"
+        settings_value:
+          type: string
+          nullable: true
+          example: "Old footer text"
+        footer_value:
+          type: string
+          nullable: true
+          example: "New footer text"
+        resolution:
+          type: string
+          enum: [footer_priority, settings_priority, manual]
+          example: "footer_priority"
+
+    SystemSettings:
+      type: object
+      required:
+        - settings
+      properties:
+        settings:
+          type: object
+          required:
+            - organization_name
+            - display_columns
+            - rotation_interval
+          properties:
+            organization_name:
+              type: string
+              maxLength: 255
+              example: "Team Pinas"
+            display_columns:
+              type: integer
+              enum: [1, 2]
+              example: 2
+            rotation_interval:
+              type: integer
+              minimum: 1000
+              example: 6000
+            # Footer fields explicitly excluded after migration
+
+    SystemSettingsUpdate:
+      type: object
+      properties:
+        organization_name:
+          type: string
+          maxLength: 255
+        display_columns:
+          type: integer
+          enum: [1, 2]
+        rotation_interval:
+          type: integer
+          minimum: 1000
+        # Footer fields not accepted (redirect to footer endpoint)
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "MIGRATION_FAILED"
+        message:
+          type: string
+          example: "Footer migration failed due to database constraint violation"
+        details:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-09-11T10:30:00Z"
