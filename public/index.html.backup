@@ -20,8 +20,8 @@
     <script src="/config/cms-config.js" async></script>
     <script src="/src/scripts/shared/smart-logo.js" defer></script>
     <script src="/src/scripts/shared/logo-controls.js" defer></script>
-    <!-- CLEAN API INTEGRATION: New API service for reliable data loading -->
-    <script src="/src/scripts/shared/api-service.js" defer></script>
+    <!-- EMERGENCY FIX: Disabled problematic CMS Connector causing config errors -->
+    <!-- <script src="/src/scripts/shared/cms-connector.js" defer></script> -->
     <script src="/src/scripts/display/MenuSignage.js" defer></script>
     
     <!-- Performance monitoring (only in development) -->
@@ -118,11 +118,47 @@
         <!-- Category Slot 0 (hidden by default) -->
         <div class="CategorySlot" data-slot="0"></div>
         
-        <!-- Category Slot 1 (left column) -->
-        <div class="CategorySlot" data-slot="1"></div>
+        <!-- Category Slot 1 (left column) - EMERGENCY FALLBACK CONTENT -->
+        <div class="CategorySlot" data-slot="1">
+          <div class="CategoryTitle">Broodjes & Warm</div>
+          <div class="MenuItem">
+            <span class="MenuItemType">Broodje Ham/Kaas</span>
+            <span class="MenuFoodItem">€4,50</span>
+          </div>
+          <div class="MenuItem">
+            <span class="MenuItemType">Broodje Gezond</span>
+            <span class="MenuFoodItem">€5,00</span>
+          </div>
+          <div class="MenuItem">
+            <span class="MenuItemType">Warme Chocolademelk</span>
+            <span class="MenuFoodItem">€2,50</span>
+          </div>
+          <div class="MenuItem">
+            <span class="MenuItemType">Koffie</span>
+            <span class="MenuFoodItem">€2,00</span>
+          </div>
+        </div>
         
-        <!-- Category Slot 2 (right column) -->
-        <div class="CategorySlot" data-slot="2"></div>
+        <!-- Category Slot 2 (right column) - EMERGENCY FALLBACK CONTENT -->
+        <div class="CategorySlot" data-slot="2">
+          <div class="CategoryTitle">Koude Dranken</div>
+          <div class="MenuItem">
+            <span class="MenuItemType">Coca Cola</span>
+            <span class="MenuFoodItem">€2,50</span>
+          </div>
+          <div class="MenuItem">
+            <span class="MenuItemType">Water</span>
+            <span class="MenuFoodItem">€2,00</span>
+          </div>
+          <div class="MenuItem">
+            <span class="MenuItemType">Sportdrank</span>
+            <span class="MenuFoodItem">€3,00</span>
+          </div>
+          <div class="MenuItem">
+            <span class="MenuItemType">Sap</span>
+            <span class="MenuFoodItem">€2,75</span>
+          </div>
+        </div>
         
         <!-- Category Slot 3 (hidden by default) -->
         <div class="CategorySlot" data-slot="3"></div>
