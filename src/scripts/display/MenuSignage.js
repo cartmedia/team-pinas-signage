@@ -19,47 +19,12 @@ if (!debugMode) {
 
 // Hide loading screen when menu data is ready
 function hideLoadingScreenWhenReady() {
-  let attempts = 0;
-  const maxAttempts = 8; // Max 1.6 seconds (8 * 200ms) - balanced for data loading
+  console.log('🚀 EMERGENCY MODE: Hiding loading screen immediately - customer waiting!');
   
-  console.log('🔄 hideLoadingScreenWhenReady started');
-  
-  // Check if menu data has been loaded and rendered
-  const checkDataReady = () => {
-    const menuItems = document.querySelectorAll('.MenuItem');
-    const hasMenuData = menuItems.length > 0;
-    
-    // Also check if categories are visible (additional validation)
-    const visibleSlots = document.querySelectorAll('.CategorySlot[style*="block"], .CategorySlot:not([style*="none"])');
-    const hasVisibleContent = visibleSlots.length > 0;
-    
-    console.log(`📊 Check ${attempts + 1}/${maxAttempts}: Found ${menuItems.length} menu items, ${visibleSlots.length} visible slots`);
-    
-    if (hasMenuData && hasVisibleContent) {
-      console.log('✅ Menu data rendered and visible, hiding loading screen...');
-      hideLoadingScreen();
-    } else if (attempts < maxAttempts) {
-      // Data not ready yet, check again after a short delay
-      attempts++;
-      setTimeout(checkDataReady, 200);
-    } else {
-      // Safety timeout - hide loading screen even if no data loaded  
-      console.warn('⏰ Loading screen timeout - hiding anyway after 1.6 seconds');
-      hideLoadingScreen();
-    }
-  };
-  
-  // Start checking after a minimal initial delay to ensure DOM is ready
-  setTimeout(checkDataReady, 100);
-  
-  // Additional safety net - force hide after 3 seconds no matter what
+  // EMERGENCY FIX: Hide immediately since we have HTML fallback content
   setTimeout(() => {
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen && !loadingScreen.classList.contains('fade-out')) {
-      console.warn('🚨 EMERGENCY: Force hiding loading screen after 3 seconds');
-      hideLoadingScreen();
-    }
-  }, 3000);
+    hideLoadingScreen();
+  }, 800); // Just 800ms to show loading animation briefly
 }
 
 // Actually hide the loading screen with animation
