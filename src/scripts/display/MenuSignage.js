@@ -769,65 +769,6 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log(`🎬 Footer animation: ${footerContinuous ? 'continuous' : 'discrete'}, spanWidth: ${spanWidth}px, containerWidth: ${containerWidth}px, totalDistance: ${totalDistance}px, duration: ${calculatedDuration}s`);
   }
 
-  // Load footer settings from CMS
-  async function loadFooterSettings() {
-    console.log('🔄 loadFooterSettings called');
-    
-    if (displaySettings && displaySettings.settings && displaySettings.settings.footer_text) {
-      footerSpeed = parseInt(displaySettings.settings.footer_speed) || 30;
-      footerText = displaySettings.settings.footer_text.trim();
-      footerContinuous = displaySettings.settings.footer_continuous !== false; // Default to true
-      const footerTextColor = displaySettings.settings.footer_text_color || 'dark'; // Default to dark
-      
-      console.log('📊 Database footer settings loaded:');
-      console.log(`  Speed: ${footerSpeed}px/s, Continuous: ${footerContinuous}, Global Color: ${footerTextColor}`);
-      console.log(`  Text: "${footerText.substring(0, 50)}${footerText.length > 50 ? '...' : ''}"`);
-      
-      // Check for per-row colors
-      const footerRowColors = displaySettings.settings.footer_row_colors;
-      if (footerRowColors && Array.isArray(footerRowColors)) {
-        console.log(`  Per-row colors: [${footerRowColors.join(', ')}]`);
-      }
-      
-      // Apply footer text color setting
-      if (displaySettings.applyFooterTextColor) {
-        console.log(`🔄 About to apply footer text color: ${footerTextColor}`);
-        displaySettings.applyFooterTextColor(footerTextColor);
-        
-        // Double-check that it was applied
-        setTimeout(() => {
-          const footer = document.querySelector('.SignageFooter');
-          if (footer) {
-            console.log(`🔍 Footer classes after application: ${footer.className}`);
-            console.log(`🔍 Footer computed color: ${getComputedStyle(footer).color}`);
-          }
-        }, 100);
-      }
-      
-      // Only override HTML content if we have actual content from database
-      if (footerText && footerText.trim()) {
-        console.log('✅ Footer content available from database, updating...');
-        updateFooterContent(); // This will show the footer and start animation
-      } else {
-        console.log('⚠️ Empty footer text in database, keeping HTML fallback content');
-        // Keep the HTML content visible - don't hide footer
-        // Just ensure footer is visible and animating
-        const footerContainer = document.querySelector('.SignageFooter');
-        if (footerContainer) {
-          footerContainer.style.display = 'block';
-          console.log('✅ HTML footer content preserved and visible');
-        }
-      }
-    } else {
-      console.log('ℹ️ No footer settings loaded, keeping HTML fallback content');
-      // Keep the HTML content visible - don't hide footer
-      const footerContainer = document.querySelector('.SignageFooter');
-      if (footerContainer) {
-        footerContainer.style.display = 'block';
-        console.log('✅ HTML footer content preserved and visible');
-      }
-    }
-  }
 
   // Show footer immediately with fallback content, then load settings
   const footerContainer = document.querySelector('.SignageFooter');
