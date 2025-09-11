@@ -383,47 +383,14 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       function computeVisibleCountFor(catIdx) {
-        // Hard limit: maximum 8 items per slot
+        // EMERGENCY FIX: Use fixed count to avoid blocking calculations
         const MAX_ITEMS = 8;
-        
-        // Prefer cached value if present
-        if (visibleCountCache.has(catIdx)) return Math.min(visibleCountCache.get(catIdx), MAX_ITEMS);
         const cat = categories[catIdx];
         if (!cat || !Array.isArray(cat.items) || cat.items.length === 0) {
-          visibleCountCache.set(catIdx, 0);
           return 0;
         }
-        const slotEl = getSlotEl();
-        if (!slotEl) return 0;
-
-        // Ensure slot is measurable: force display and hide visually to avoid flicker
-        const prevDisplay = slotEl.style.display;
-        const prevVisibility = slotEl.style.visibility;
-        slotEl.style.display = "block";
-        slotEl.style.visibility = "hidden";
-
-        let lo = 1;
-        let hi = Math.min(cat.items.length, MAX_ITEMS); // Cap at MAX_ITEMS
-        let best = 1;
-        // Binary search max items that fit (up to MAX_ITEMS)
-        while (lo <= hi) {
-          const mid = Math.floor((lo + hi) / 2);
-          renderCategory(PRIMARY_SLOT, cat, cat.items.slice(0, mid));
-          if (fits(slotEl)) {
-            best = mid;
-            lo = mid + 1;
-          } else {
-            hi = mid - 1;
-          }
-        }
-
-        // Restore styles
-        slotEl.style.visibility = prevVisibility || "";
-        slotEl.style.display = prevDisplay || "";
-
-        const finalCount = Math.min(best, MAX_ITEMS);
-        visibleCountCache.set(catIdx, finalCount);
-        return finalCount;
+        // Simple fixed calculation - no complex DOM measurements that block
+        return Math.min(cat.items.length, MAX_ITEMS);
       }
 
       function renderDynamicSlots() {
