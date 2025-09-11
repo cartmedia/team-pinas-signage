@@ -823,21 +823,38 @@
                             </div>
                             
                             <div class="space-y-8">
-                                <!-- Footer Text -->
+                                <!-- Footer Text Items -->
                                 <div>
                                     <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                                         <i class="fas fa-font mr-2 text-purple-500"></i>
-                                        Footer Tekst
+                                        Footer Tekst Items
                                     </h4>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Footer Tekst
-                                        </label>
-                                        <textarea id="footerText" rows="3" 
-                                                  class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                  placeholder="Voer footer tekst in..."></textarea>
+                                        <div class="flex items-center justify-between mb-4">
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Footer Tekst Onderdelen
+                                            </label>
+                                            <button type="button" id="addFooterItem" 
+                                                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <i class="fas fa-plus mr-1"></i>
+                                                Voeg Item Toe
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Footer Items Container -->
+                                        <div id="footerItemsContainer" class="space-y-3 mb-4">
+                                            <!-- Footer items will be dynamically added here -->
+                                        </div>
+                                        
+                                        <!-- Empty State -->
+                                        <div id="footerItemsEmpty" class="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hidden">
+                                            <i class="fas fa-text-width text-4xl text-gray-400 mb-3"></i>
+                                            <p class="text-gray-500 dark:text-gray-400">Geen footer items</p>
+                                            <p class="text-sm text-gray-400 dark:text-gray-500">Klik op "Voeg Item Toe" om te beginnen</p>
+                                        </div>
+                                        
                                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                            Gebruik &lt;separator&gt; om scheidingen (kroon) in te voegen tussen tekst delen.
+                                            Items worden automatisch gescheiden door kroon-iconen. Sleep items om volgorde te wijzigen.
                                         </p>
                                     </div>
                                 </div>
@@ -853,10 +870,11 @@
                                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Scroll Type
                                             </label>
-                                            <select id="footerContinuous" 
+                                            <select id="footerScrollDirection" 
                                                     class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                <option value="true" selected>Continu (naadloos)</option>
-                                                <option value="false">Discreet (met pauzes)</option>
+                                                <option value="continuous" selected>Continu (naadloos)</option>
+                                                <option value="discrete">Discreet (met pauzes)</option>
+                                                <option value="static">Statisch (geen scroll)</option>
                                             </select>
                                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                                 Continu = geen whitespace tussen einde en begin
@@ -903,6 +921,38 @@
                                                    value="#FFFFFF">
                                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                                 Kies de achtergrondkleur voor de footer
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Typography Settings -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i class="fas fa-font mr-2 text-blue-500"></i>
+                                        Typografie
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Font Grootte
+                                            </label>
+                                            <input type="text" id="footerFontSize" 
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   value="4vh" placeholder="Bijvoorbeeld: 4vh, 24px, 1.5rem">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                CSS font size (vh, px, rem, em)
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Scheiding Icoon
+                                            </label>
+                                            <input type="text" id="footerDividerImage" 
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   value="assets/images/pinas_kroon.svg" placeholder="assets/images/custom_divider.svg">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Pad naar scheiding icoon tussen items
                                             </p>
                                         </div>
                                     </div>
@@ -1642,6 +1692,30 @@
             
             // Initialize dark mode
             initDarkMode();
+            
+            // Development mode: Auto-initialize AdminInterface on localhost
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('🔧 Development mode: Auto-initializing AdminInterface for testing...');
+                setTimeout(() => {
+                    if (window.AdminInterface && !window.adminInterface) {
+                        console.log('Creating AdminInterface instance for development...');
+                        window.adminInterface = new window.AdminInterface();
+                        window.adminInterface.init();
+                        
+                        // Show admin container
+                        const adminContainer = document.getElementById('adminContainer');
+                        if (adminContainer) {
+                            adminContainer.style.display = 'block';
+                        }
+                        
+                        // Hide login form
+                        const loginSection = document.querySelector('.min-h-screen.bg-gray-50');
+                        if (loginSection) {
+                            loginSection.style.display = 'none';
+                        }
+                    }
+                }, 500);
+            }
             
             // Only initialize default footer lines if AdminInterface is not available
             setTimeout(() => {
