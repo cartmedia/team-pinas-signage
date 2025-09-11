@@ -20,7 +20,7 @@ if (!debugMode) {
 // Hide loading screen when menu data is ready
 function hideLoadingScreenWhenReady() {
   let attempts = 0;
-  const maxAttempts = 3; // Max 0.6 seconds (3 * 200ms)
+  const maxAttempts = 8; // Max 1.6 seconds (8 * 200ms) - balanced for data loading
   
   console.log('🔄 hideLoadingScreenWhenReady started');
   
@@ -29,10 +29,14 @@ function hideLoadingScreenWhenReady() {
     const menuItems = document.querySelectorAll('.MenuItem');
     const hasMenuData = menuItems.length > 0;
     
-    console.log(`📊 Check ${attempts + 1}/${maxAttempts}: Found ${menuItems.length} menu items`);
+    // Also check if categories are visible (additional validation)
+    const visibleSlots = document.querySelectorAll('.CategorySlot[style*="block"], .CategorySlot:not([style*="none"])');
+    const hasVisibleContent = visibleSlots.length > 0;
     
-    if (hasMenuData) {
-      console.log('✅ Menu data rendered, hiding loading screen...');
+    console.log(`📊 Check ${attempts + 1}/${maxAttempts}: Found ${menuItems.length} menu items, ${visibleSlots.length} visible slots`);
+    
+    if (hasMenuData && hasVisibleContent) {
+      console.log('✅ Menu data rendered and visible, hiding loading screen...');
       hideLoadingScreen();
     } else if (attempts < maxAttempts) {
       // Data not ready yet, check again after a short delay
@@ -40,7 +44,7 @@ function hideLoadingScreenWhenReady() {
       setTimeout(checkDataReady, 200);
     } else {
       // Safety timeout - hide loading screen even if no data loaded  
-      console.warn('⏰ Loading screen timeout - hiding anyway after 0.6 seconds');
+      console.warn('⏰ Loading screen timeout - hiding anyway after 1.6 seconds');
       hideLoadingScreen();
     }
   };
@@ -48,14 +52,14 @@ function hideLoadingScreenWhenReady() {
   // Start checking after a minimal initial delay to ensure DOM is ready
   setTimeout(checkDataReady, 100);
   
-  // Additional safety net - force hide after 1 second no matter what
+  // Additional safety net - force hide after 3 seconds no matter what
   setTimeout(() => {
     const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen && !loadingScreen.classList.contains('fade-out')) {
-      console.warn('🚨 EMERGENCY: Force hiding loading screen after 1 second');
+      console.warn('🚨 EMERGENCY: Force hiding loading screen after 3 seconds');
       hideLoadingScreen();
     }
-  }, 1000);
+  }, 3000);
 }
 
 // Actually hide the loading screen with animation
@@ -343,11 +347,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function chunk(array, size) {
-    const out = [];
-    for (let i = 0; i < array.length; i += size) out.push(array.slice(i, i + size));
-    return out;
-  }
 
   // Initialize CMS connector with fallback config
   const cmsConnector = window.CMSConnector ? new window.CMSConnector({
