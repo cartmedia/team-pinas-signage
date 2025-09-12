@@ -1,0 +1,168 @@
+/**
+ * Footer CSS State Management System
+ * 
+ * Manages footer visibility states and transitions.
+ * Provides clean state management without CSS conflicts.
+ */
+
+/* Base state - footer is hidden by default */
+.SignageFooter {
+  /* Default hidden state */
+  display: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Explicit hidden state */
+.SignageFooter.footer-hidden {
+  display: none;
+}
+
+/* Visible state with full functionality */
+.SignageFooter.footer-visible {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+}
+
+/* Transitioning state during configuration changes */
+.SignageFooter.footer-transitioning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Error state when component fails to load */
+.SignageFooter.footer-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.3;
+  background-color: var(--footer-bg-color, #c19d6c);
+  color: var(--footer-text-color, #101010);
+}
+
+.SignageFooter.footer-error::after {
+  content: 'Footer temporarily unavailable';
+  font-size: calc(var(--footer-font-size, 3vh) * 0.8);
+  font-style: italic;
+}
+
+/* Loading state while configuration is being fetched */
+.SignageFooter.footer-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  background-color: var(--footer-bg-color, #c19d6c);
+}
+
+.SignageFooter.footer-loading::after {
+  content: '';
+  width: calc(var(--footer-font-size, 3vh) * 0.8);
+  height: calc(var(--footer-font-size, 3vh) * 0.8);
+  border: 2px solid var(--footer-text-color, #101010);
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: footer-loading-spin 1s linear infinite;
+}
+
+@keyframes footer-loading-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Disabled state when footer is turned off */
+.SignageFooter.footer-disabled {
+  display: none !important; /* Use !important only for disabled state */
+}
+
+/* State combinations */
+
+/* Visible + transitioning = configuration change in progress */
+.SignageFooter.footer-visible.footer-transitioning {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Visible + loading = visible while loading new content */
+.SignageFooter.footer-visible.footer-loading {
+  opacity: 0.7;
+}
+
+/* Animation states that work with visibility states */
+.SignageFooter.footer-animation-running {
+  /* Animation is running - ensure hardware acceleration */
+  /* Applied to child elements via component logic */
+}
+
+.SignageFooter.footer-animation-paused {
+  /* Animation is paused - keep elements in current position */
+}
+
+.SignageFooter.footer-animation-stopped {
+  /* Animation is stopped - reset to static state */
+}
+
+/* Responsive state adjustments */
+@media screen and (max-height: 600px) {
+  .SignageFooter.footer-visible,
+  .SignageFooter.footer-transitioning,
+  .SignageFooter.footer-loading,
+  .SignageFooter.footer-error {
+    /* Adjust height for small screens */
+    min-height: calc(var(--footer-height, 7.8vh) * 0.8);
+  }
+}
+
+/* Accessibility states */
+@media (prefers-reduced-motion: reduce) {
+  .SignageFooter.footer-transitioning {
+    transition: none;
+    opacity: 1; /* No fade transitions for reduced motion */
+  }
+  
+  .SignageFooter.footer-loading::after {
+    animation: none;
+    content: 'Loading...'; /* Text instead of spinning animation */
+    width: auto;
+    height: auto;
+    border: none;
+  }
+}
+
+/* High contrast adjustments */
+@media (prefers-contrast: high) {
+  .SignageFooter.footer-error {
+    background-color: #000000;
+    color: #ffffff;
+    border-top: 2px solid #ffffff;
+  }
+  
+  .SignageFooter.footer-loading {
+    background-color: #000000;
+    color: #ffffff;
+    border-top: 2px solid #ffffff;
+  }
+  
+  .SignageFooter.footer-loading::after {
+    border-color: #ffffff;
+    border-top-color: transparent;
+  }
+}
+
+/* Focus management for accessibility */
+.SignageFooter:focus-within {
+  outline: 2px solid var(--footer-text-color, #101010);
+  outline-offset: 2px;
+}
+
+/* Print styles - hide footer in print */
+@media print {
+  .SignageFooter {
+    display: none !important;
+  }
+}
