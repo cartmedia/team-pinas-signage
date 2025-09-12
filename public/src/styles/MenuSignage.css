@@ -348,6 +348,7 @@ body {
   align-items: center;
   justify-content: center;
   line-height: 1; /* Tight line height for better control */
+  display: none;
 }
 
 /* Footer text color variants */
