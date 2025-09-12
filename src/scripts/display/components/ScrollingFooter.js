@@ -24,7 +24,7 @@ class ScrollingFooter {
      * @param {string} config.scroll_direction - 'continuous'|'discrete'|'static'
      * @param {string} [config.background_color] - Optional background color
      * @param {string} [config.divider_image] - Path to separator image
-     * @param {string} [config.separator_text] - Text separator between segments (default: ' 🏰 ')
+     * @param {string} [config.separator_text] - Text separator between segments (default: crown SVG)
      */
     constructor(container, config) {
         // Validate required parameters
@@ -272,7 +272,7 @@ class ScrollingFooter {
         `;
         
         // Add all text segments with separators
-        const separatorText = this.config.separator_text || ' 🏰 ';
+        const separatorText = this.config.separator_text || ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ';
         let totalContent = this.textSegments.join(separatorText);
         measureElement.textContent = totalContent;
         
@@ -325,7 +325,7 @@ class ScrollingFooter {
                     const separatorSpan = document.createElement('span');
                     separatorSpan.className = 'separator';
                     separatorSpan.setAttribute('aria-hidden', 'true');
-                    separatorSpan.textContent = this.config.separator_text || ' 🏰 ';
+                    separatorSpan.innerHTML = this.config.separator_text || ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ';
                     scrollContent.appendChild(separatorSpan);
                 }
             }
@@ -420,7 +420,7 @@ class ScrollingFooter {
         this.container.classList.add('fallback');
         
         // Join segments with separator symbol
-        const separatorText = this.config.separator_text || ' 🏰 ';
+        const separatorText = this.config.separator_text || ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ';
         const staticText = this.textSegments.join(separatorText);
         this.container.textContent = staticText;
         
