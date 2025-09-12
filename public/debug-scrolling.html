@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollingFooter Debug</title>
+    <link rel="stylesheet" href="/src/styles/components/scrolling-footer.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .debug-container { background: white; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .test-footer { width: 800px; height: 60px; background: #333; color: white; border-radius: 3px; padding: 10px; margin: 10px 0; }
+        .console-output { background: #1a1a1a; color: #00ff00; font-family: monospace; padding: 15px; margin: 10px 0; border-radius: 5px; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>ScrollingFooter Debug Test</h1>
+    
+    <div class="debug-container">
+        <h3>Real Footer API Data Test</h3>
+        <div class="test-footer" id="footer-real"></div>
+        <button onclick="testRealFooter()">Test Real Footer</button>
+        <button onclick="stopFooter()">Stop Footer</button>
+    </div>
+
+    <div class="debug-container">
+        <h3>Simple Test</h3>
+        <div class="test-footer" id="footer-simple"></div>
+        <button onclick="testSimple()">Test Simple</button>
+    </div>
+
+    <div class="debug-container">
+        <h3>Console Output</h3>
+        <div class="console-output" id="console"></div>
+    </div>
+
+    <script src="/src/scripts/display/components/ScrollingFooter.js"></script>
+    <script>
+        let scrollingFooterInstance = null;
+        
+        // Capture console.log output
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function logToDiv(message, type = 'log') {
+            const consoleDiv = document.getElementById('console');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff4444' : '#00ff00';
+            consoleDiv.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            logToDiv(args.join(' '), 'log');
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            logToDiv(args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+        
+        async function testRealFooter() {
+            try {
+                logToDiv('Fetching real footer data from API...');
+                
+                const response = await fetch('/.netlify/functions/footer');
+                const footerData = await response.json();
+                
+                logToDiv('Footer API response: ' + JSON.stringify(footerData, null, 2));
+                
+                const container = document.getElementById('footer-real');
+                
+                if (scrollingFooterInstance) {
+                    scrollingFooterInstance.stop();
+                    scrollingFooterInstance = null;
+                }
+                
+                const config = {
+                    footer_text: footerData.footer_text,
+                    text_color: footerData.text_color || '#ffffff',
+                    font_size: footerData.font_size || '3vh',
+                    scroll_speed: footerData.scroll_speed || 30,
+                    scroll_direction: footerData.scroll_direction || 'continuous',
+                    background_color: footerData.background_color,
+                    divider_image: footerData.divider_image
+                };
+                
+                logToDiv('ScrollingFooter config: ' + JSON.stringify(config, null, 2));
+                
+                scrollingFooterInstance = new ScrollingFooter(container, config);
+                
+                const success = await scrollingFooterInstance.start();
+                
+                if (success) {
+                    logToDiv('✅ ScrollingFooter started successfully with real data!');
+                } else {
+                    logToDiv('⚠️ ScrollingFooter using static fallback');
+                }
+                
+            } catch (error) {
+                logToDiv('❌ Error: ' + error.message, 'error');
+                logToDiv('❌ Stack: ' + error.stack, 'error');
+            }
+        }
+        
+        function testSimple() {
+            try {
+                const container = document.getElementById('footer-simple');
+                
+                if (scrollingFooterInstance) {
+                    scrollingFooterInstance.stop();
+                    scrollingFooterInstance = null;
+                }
+                
+                const config = {
+                    footer_text: "Simple test <separator> Should scroll continuously <separator> Three segments total",
+                    text_color: '#ffffff',
+                    font_size: '3vh',
+                    scroll_speed: 30,
+                    scroll_direction: 'continuous'
+                };
+                
+                logToDiv('Creating simple ScrollingFooter...');
+                
+                scrollingFooterInstance = new ScrollingFooter(container, config);
+                
+                scrollingFooterInstance.start().then((success) => {
+                    if (success) {
+                        logToDiv('✅ Simple ScrollingFooter started successfully!');
+                    } else {
+                        logToDiv('⚠️ Simple ScrollingFooter using static fallback');
+                    }
+                }).catch((error) => {
+                    logToDiv('❌ Simple test error: ' + error.message, 'error');
+                });
+                
+            } catch (error) {
+                logToDiv('❌ Simple test error: ' + error.message, 'error');
+            }
+        }
+        
+        function stopFooter() {
+            if (scrollingFooterInstance) {
+                scrollingFooterInstance.stop();
+                scrollingFooterInstance = null;
+                logToDiv('🛑 ScrollingFooter stopped');
+            } else {
+                logToDiv('ℹ️ No ScrollingFooter instance to stop');
+            }
+        }
+        
+        // Test immediately when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            logToDiv('🚀 Debug page loaded. ScrollingFooter class available: ' + (typeof ScrollingFooter !== 'undefined'));
+            
+            // Auto-test the simple version
+            setTimeout(() => {
+                testSimple();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

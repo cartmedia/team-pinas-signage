@@ -15,6 +15,7 @@
     <link rel="dns-prefetch" href="https://use.typekit.net" />
     
     <link rel="stylesheet" href="/src/styles/MenuSignage.css" />
+    <link rel="stylesheet" href="/src/styles/components/scrolling-footer.css" />
     <link rel="stylesheet" href="https://use.typekit.net/iei5wpp.css" media="print" onload="this.media='all'" />
     <!-- Performance: Load critical scripts asynchronously -->
     <script src="/config/cms-config.js" async></script>
@@ -22,6 +23,8 @@
     <script src="/src/scripts/shared/logo-controls.js" defer></script>
     <!-- CLEAN API INTEGRATION: New API service for reliable data loading -->
     <script src="/src/scripts/shared/api-service.js?v=footer-fix" defer></script>
+    <!-- ScrollingFooter Component -->
+    <script src="/src/scripts/display/components/ScrollingFooter.js" defer></script>
     <script src="/src/scripts/display/MenuSignage.js" defer></script>
     
     <!-- Performance monitoring (only in development) -->
@@ -132,7 +135,7 @@
     <!-- FOOTER: Scrolling Marketing Text -->
     <footer class="SignageFooter">
       <div class="ScrollingText">
-        <span>
+        <span id="footer-text">
           <!-- Footer content will be loaded from database -->
         </span>
       </div>

@@ -86,6 +86,7 @@ body {
     "footer";
   
   min-height: 100vh;
+  max-height: 100vh; /* Force grid to exactly fill viewport */
   margin: 0;
   padding: 0;
   overflow: clip !important;
@@ -109,14 +110,21 @@ body {
   margin-top: 12vh; /* Moderate margin for good logo/content separation */
   /* Ensure we don't push footer off screen */
   overflow: hidden;
+  /* Prevent content from growing beyond available space */
+  max-height: calc(100vh - var(--header-height) - var(--footer-height) - 12vh);
 }
 
 .SignageFooter {
   grid-area: footer;
-  z-index: 10;
-  /* Ensure footer is always visible */
+  z-index: 100; /* Higher z-index to ensure it's above background elements */
+  /* Ensure footer is always visible and positioned correctly */
   position: relative;
   min-height: var(--footer-height);
+  height: var(--footer-height); /* Force exact height */
+  /* Ensure footer sticks to bottom of viewport */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* HEADER LAYOUT - CSS Grid */

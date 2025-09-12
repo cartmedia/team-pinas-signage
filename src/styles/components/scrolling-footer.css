@@ -1,0 +1,118 @@
+/* ScrollingFooter Component Styles
+ * Hardware-accelerated CSS animations for footer continuous scrolling
+ * Performance target: 60fps with GPU acceleration
+ */
+
+.scrolling-footer {
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* Force GPU layer for hardware acceleration */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.scroll-content {
+  display: inline-block;
+  /* Animation applied dynamically via JavaScript */
+  /* transform3d used for hardware acceleration */
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: forwards;
+  /* Prevent subpixel rendering issues */
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.text-segment {
+  display: inline;
+  vertical-align: middle;
+}
+
+.separator {
+  display: inline-block;
+  width: 2em;
+  height: 1em;
+  margin: 0 0.5em;
+  vertical-align: middle;
+  /* Kroon SVG icon as background */
+  background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMTIgMkw5IDlMMiA5TDcgMTRMNSAyMUwxMiAxN0wxOSAyMUwxNyAxNEwyMiA5TDE1IDlMMTIgMloiIGZpbGw9ImN1cnJlbnRDb2xvciIvPgo8L3N2Zz4K') center/contain no-repeat;
+  background-size: contain;
+}
+
+/* Base keyframe template - actual keyframes generated dynamically */
+@keyframes scroll-footer-base {
+  0% { 
+    transform: translate3d(0, 0, 0); 
+  }
+  100% { 
+    transform: translate3d(-100%, 0, 0); 
+  }
+}
+
+/* Performance optimization classes */
+.scrolling-footer.gpu-accelerated .scroll-content {
+  /* Additional GPU layer hints */
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+}
+
+.scrolling-footer.fallback {
+  /* Static fallback styles when animation fails */
+  overflow: visible;
+  white-space: normal;
+}
+
+.scrolling-footer.fallback .scroll-content {
+  animation: none;
+  transform: none;
+}
+
+/* Performance monitoring indicator (development only) */
+.scrolling-footer.debug::after {
+  content: "FPS: " attr(data-fps);
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+/* Media queries for different screen sizes */
+@media (max-width: 1920px) {
+  .separator {
+    width: 1.8em;
+  }
+}
+
+@media (max-width: 1280px) {
+  .separator {
+    width: 1.5em;
+    margin: 0 0.3em;
+  }
+}
+
+/* Accessibility: Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .scrolling-footer .scroll-content {
+    animation: none;
+    transform: none;
+  }
+  
+  .scrolling-footer {
+    overflow: visible;
+    white-space: normal;
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .separator {
+    /* Use higher quality SVG rendering */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}

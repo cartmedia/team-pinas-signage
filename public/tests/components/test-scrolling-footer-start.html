@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollingFooter start() Method Contract Test</title>
+    <link rel="stylesheet" href="/src/styles/components/scrolling-footer.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-container { background: white; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .test-pass { border-left: 5px solid #4CAF50; }
+        .test-fail { border-left: 5px solid #f44336; }
+        .test-footer { width: 100%; height: 60px; background: #333; color: white; border-radius: 3px; padding: 10px; }
+        .error { color: #f44336; font-weight: bold; }
+        .success { color: #4CAF50; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>ScrollingFooter start() Method Contract Test</h1>
+    <p><strong>CRITICAL:</strong> This test MUST FAIL before ScrollingFooter component implementation.</p>
+    
+    <div class="test-container" id="test-start-return">
+        <h3>T004.1: start() Returns Promise&lt;boolean&gt;</h3>
+        <div class="test-footer" id="footer-return"></div>
+        <div id="result-return"></div>
+    </div>
+
+    <div class="test-container" id="test-start-animation">
+        <h3>T004.2: start() Applies Animation</h3>
+        <div class="test-footer" id="footer-animation"></div>
+        <div id="result-animation"></div>
+    </div>
+
+    <div class="test-container" id="test-start-duplication">
+        <h3>T004.3: start() Handles Text Duplication</h3>
+        <div class="test-footer" id="footer-duplication"></div>
+        <div id="result-duplication"></div>
+    </div>
+
+    <div class="test-container" id="test-start-events">
+        <h3>T004.4: start() Fires animation-started Event</h3>
+        <div class="test-footer" id="footer-events"></div>
+        <div id="result-events"></div>
+    </div>
+
+    <script>
+        // Contract Test: ScrollingFooter start() Method
+        // Expected to FAIL until component is implemented
+        
+        function runStartTests() {
+            const results = {
+                returnValue: false,
+                animation: false,
+                duplication: false,
+                events: false
+            };
+
+            // Test T004.1: start() Returns Promise<boolean>
+            try {
+                const container = document.getElementById('footer-return');
+                const config = {
+                    footer_text: "Test scrolling <separator> Return value",
+                    text_color: "#ffffff",
+                    scroll_speed: 30,
+                    scroll_direction: "continuous"
+                };
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                const startResult = scrollingFooter.start();
+                
+                if (startResult instanceof Promise) {
+                    startResult.then((success) => {
+                        if (typeof success === 'boolean') {
+                            results.returnValue = true;
+                            document.getElementById('result-return').innerHTML = 
+                                '<span class="success">✓ UNEXPECTED PASS - Returns Promise&lt;boolean&gt;</span>';
+                            document.getElementById('test-start-return').className += ' test-pass';
+                        } else {
+                            document.getElementById('result-return').innerHTML = 
+                                '<span class="error">✗ Promise resolves to non-boolean value</span>';
+                            document.getElementById('test-start-return').className += ' test-fail';
+                        }
+                    }).catch((error) => {
+                        document.getElementById('result-return').innerHTML = 
+                            `<span class="error">✗ Promise rejected: ${error.message}</span>`;
+                        document.getElementById('test-start-return').className += ' test-fail';
+                    });
+                } else {
+                    document.getElementById('result-return').innerHTML = 
+                        '<span class="error">✗ start() does not return Promise</span>';
+                    document.getElementById('test-start-return').className += ' test-fail';
+                }
+            } catch (error) {
+                document.getElementById('result-return').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-start-return').className += ' test-fail';
+            }
+
+            // Test T004.2: start() Applies Animation
+            try {
+                const container = document.getElementById('footer-animation');
+                const config = {
+                    footer_text: "Animation test <separator> Should scroll",
+                    scroll_speed: 20,
+                    scroll_direction: "continuous"
+                };
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                scrollingFooter.start().then((success) => {
+                    if (success) {
+                        // Check for animation CSS properties
+                        const scrollContent = container.querySelector('.scroll-content');
+                        if (scrollContent) {
+                            const computedStyle = window.getComputedStyle(scrollContent);
+                            const animationName = computedStyle.animationName;
+                            const animationDuration = computedStyle.animationDuration;
+                            
+                            if (animationName && animationName !== 'none' && 
+                                animationDuration && parseFloat(animationDuration) > 0) {
+                                results.animation = true;
+                                document.getElementById('result-animation').innerHTML = 
+                                    '<span class="success">✓ UNEXPECTED PASS - Animation applied</span>';
+                                document.getElementById('test-start-animation').className += ' test-pass';
+                            } else {
+                                document.getElementById('result-animation').innerHTML = 
+                                    '<span class="error">✗ No animation CSS properties found</span>';
+                                document.getElementById('test-start-animation').className += ' test-fail';
+                            }
+                        } else {
+                            document.getElementById('result-animation').innerHTML = 
+                                '<span class="error">✗ .scroll-content element not created</span>';
+                            document.getElementById('test-start-animation').className += ' test-fail';
+                        }
+                    } else {
+                        document.getElementById('result-animation').innerHTML = 
+                            '<span class="error">✗ start() returned false</span>';
+                        document.getElementById('test-start-animation').className += ' test-fail';
+                    }
+                });
+            } catch (error) {
+                document.getElementById('result-animation').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-start-animation').className += ' test-fail';
+            }
+
+            // Test T004.3: start() Handles Text Duplication
+            try {
+                const container = document.getElementById('footer-duplication');
+                container.style.width = '800px'; // Set specific width for testing
+                
+                const config = {
+                    footer_text: "Short <separator> Text", // Short text should duplicate
+                    scroll_direction: "continuous"
+                };
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                scrollingFooter.start().then((success) => {
+                    if (success) {
+                        const scrollContent = container.querySelector('.scroll-content');
+                        if (scrollContent) {
+                            const textSegments = scrollContent.querySelectorAll('.text-segment');
+                            // Short text should be duplicated multiple times
+                            if (textSegments.length > 2) {
+                                results.duplication = true;
+                                document.getElementById('result-duplication').innerHTML = 
+                                    `<span class="success">✓ UNEXPECTED PASS - Text duplicated (${textSegments.length} segments)</span>`;
+                                document.getElementById('test-start-duplication').className += ' test-pass';
+                            } else {
+                                document.getElementById('result-duplication').innerHTML = 
+                                    '<span class="error">✗ Text not duplicated for screen width</span>';
+                                document.getElementById('test-start-duplication').className += ' test-fail';
+                            }
+                        } else {
+                            document.getElementById('result-duplication').innerHTML = 
+                                '<span class="error">✗ .scroll-content not found</span>';
+                            document.getElementById('test-start-duplication').className += ' test-fail';
+                        }
+                    }
+                });
+            } catch (error) {
+                document.getElementById('result-duplication').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-start-duplication').className += ' test-fail';
+            }
+
+            // Test T004.4: start() Fires animation-started Event
+            try {
+                const container = document.getElementById('footer-events');
+                const config = {
+                    footer_text: "Event test <separator> Animation started",
+                    scroll_direction: "continuous"
+                };
+                
+                let eventFired = false;
+                container.addEventListener('animation-started', (event) => {
+                    if (event.detail && 
+                        typeof event.detail.duration === 'number' &&
+                        typeof event.detail.repetitions === 'number') {
+                        results.events = true;
+                        document.getElementById('result-events').innerHTML = 
+                            '<span class="success">✓ UNEXPECTED PASS - animation-started event fired with correct detail</span>';
+                        document.getElementById('test-start-events').className += ' test-pass';
+                    } else {
+                        document.getElementById('result-events').innerHTML = 
+                            '<span class="error">✗ animation-started event missing detail properties</span>';
+                        document.getElementById('test-start-events').className += ' test-fail';
+                    }
+                    eventFired = true;
+                });
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                scrollingFooter.start().then((success) => {
+                    // Give event time to fire
+                    setTimeout(() => {
+                        if (!eventFired) {
+                            document.getElementById('result-events').innerHTML = 
+                                '<span class="error">✗ animation-started event not fired</span>';
+                            document.getElementById('test-start-events').className += ' test-fail';
+                        }
+                    }, 100);
+                });
+            } catch (error) {
+                document.getElementById('result-events').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-start-events').className += ' test-fail';
+            }
+
+            // Summary
+            setTimeout(() => {
+                const passCount = Object.values(results).filter(r => r).length;
+                const totalTests = Object.keys(results).length;
+                
+                console.log('ScrollingFooter start() Tests:', results);
+                console.log(`Passed: ${passCount}/${totalTests}`);
+                
+                if (passCount === 0) {
+                    console.log('✅ ALL TESTS FAILED AS EXPECTED (TDD Red Phase)');
+                } else {
+                    console.log('⚠️ Some tests passed - component may already exist');
+                }
+            }, 500);
+            
+            return results;
+        }
+
+        // Run tests when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Running ScrollingFooter start() Contract Tests...');
+            runStartTests();
+        });
+    </script>
+</body>
+</html>

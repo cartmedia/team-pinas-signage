@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollingFooter Constructor Contract Test</title>
+    <link rel="stylesheet" href="../../src/styles/components/scrolling-footer.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-container { background: white; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .test-pass { border-left: 5px solid #4CAF50; }
+        .test-fail { border-left: 5px solid #f44336; }
+        .test-footer { width: 100%; height: 60px; background: #333; color: white; border-radius: 3px; }
+        .error { color: #f44336; font-weight: bold; }
+        .success { color: #4CAF50; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>ScrollingFooter Constructor Contract Test</h1>
+    <p><strong>CRITICAL:</strong> This test MUST FAIL before ScrollingFooter component implementation.</p>
+    
+    <div class="test-container" id="test-constructor-basic">
+        <h3>T003.1: Basic Constructor</h3>
+        <div class="test-footer" id="footer-basic"></div>
+        <div id="result-basic"></div>
+    </div>
+
+    <div class="test-container" id="test-constructor-validation">
+        <h3>T003.2: Constructor Parameter Validation</h3>
+        <div class="test-footer" id="footer-validation"></div>
+        <div id="result-validation"></div>
+    </div>
+
+    <div class="test-container" id="test-constructor-config">
+        <h3>T003.3: Constructor Configuration</h3>
+        <div class="test-footer" id="footer-config"></div>
+        <div id="result-config"></div>
+    </div>
+
+    <div class="test-container" id="test-constructor-css">
+        <h3>T003.4: Constructor CSS Class Application</h3>
+        <div class="test-footer" id="footer-css"></div>
+        <div id="result-css"></div>
+    </div>
+
+    <script>
+        // Contract Test: ScrollingFooter Constructor
+        // Expected to FAIL until component is implemented
+        
+        function runConstructorTests() {
+            const results = {
+                basic: false,
+                validation: false,
+                config: false,
+                css: false
+            };
+
+            // Test T003.1: Basic Constructor
+            try {
+                const container = document.getElementById('footer-basic');
+                const config = {
+                    footer_text: "Test text <separator> More text",
+                    text_color: "#ffffff",
+                    font_size: "3vh",
+                    scroll_speed: 30,
+                    scroll_direction: "continuous"
+                };
+                
+                // This should fail - ScrollingFooter not implemented yet
+                const scrollingFooter = new ScrollingFooter(container, config);
+                
+                if (scrollingFooter && 
+                    scrollingFooter.container === container &&
+                    scrollingFooter.config === config) {
+                    results.basic = true;
+                    document.getElementById('result-basic').innerHTML = 
+                        '<span class="success">✓ UNEXPECTED PASS - Constructor created successfully</span>';
+                    document.getElementById('test-constructor-basic').className += ' test-pass';
+                } else {
+                    document.getElementById('result-basic').innerHTML = 
+                        '<span class="error">✗ Constructor returned invalid object</span>';
+                    document.getElementById('test-constructor-basic').className += ' test-fail';
+                }
+            } catch (error) {
+                // Expected to fail - ScrollingFooter not implemented
+                document.getElementById('result-basic').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-constructor-basic').className += ' test-fail';
+            }
+
+            // Test T003.2: Constructor Parameter Validation  
+            try {
+                // Test with null container - should throw error
+                const config = {
+                    footer_text: "Test",
+                    scroll_direction: "continuous"
+                };
+                
+                const scrollingFooter = new ScrollingFooter(null, config);
+                
+                document.getElementById('result-validation').innerHTML = 
+                    '<span class="error">✗ UNEXPECTED PASS - Should reject null container</span>';
+                document.getElementById('test-constructor-validation').className += ' test-fail';
+            } catch (error) {
+                // Expected behavior - should validate parameters
+                if (error.message.includes('container') || error.name === 'ReferenceError') {
+                    document.getElementById('result-validation').innerHTML = 
+                        `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                    document.getElementById('test-constructor-validation').className += ' test-fail';
+                } else {
+                    document.getElementById('result-validation').innerHTML = 
+                        `<span class="error">✗ Wrong error type: ${error.message}</span>`;
+                    document.getElementById('test-constructor-validation').className += ' test-fail';
+                }
+            }
+
+            // Test T003.3: Constructor Configuration
+            try {
+                const container = document.getElementById('footer-config');
+                const config = {
+                    footer_text: "Config test <separator> With separator",
+                    text_color: "#ff0000",
+                    font_size: "4vh",
+                    scroll_speed: 50,
+                    scroll_direction: "continuous"
+                };
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                
+                if (scrollingFooter.config.footer_text === config.footer_text &&
+                    scrollingFooter.config.text_color === config.text_color &&
+                    scrollingFooter.config.scroll_speed === config.scroll_speed) {
+                    results.config = true;
+                    document.getElementById('result-config').innerHTML = 
+                        '<span class="success">✓ UNEXPECTED PASS - Configuration stored correctly</span>';
+                    document.getElementById('test-constructor-config').className += ' test-pass';
+                } else {
+                    document.getElementById('result-config').innerHTML = 
+                        '<span class="error">✗ Configuration not stored properly</span>';
+                    document.getElementById('test-constructor-config').className += ' test-fail';
+                }
+            } catch (error) {
+                document.getElementById('result-config').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-constructor-config').className += ' test-fail';
+            }
+
+            // Test T003.4: CSS Class Application
+            try {
+                const container = document.getElementById('footer-css');
+                const config = {
+                    footer_text: "CSS test",
+                    scroll_direction: "continuous"
+                };
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                
+                if (container.classList.contains('scrolling-footer')) {
+                    results.css = true;
+                    document.getElementById('result-css').innerHTML = 
+                        '<span class="success">✓ UNEXPECTED PASS - CSS class applied</span>';
+                    document.getElementById('test-constructor-css').className += ' test-pass';
+                } else {
+                    document.getElementById('result-css').innerHTML = 
+                        '<span class="error">✗ scrolling-footer CSS class not applied</span>';
+                    document.getElementById('test-constructor-css').className += ' test-fail';
+                }
+            } catch (error) {
+                document.getElementById('result-css').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-constructor-css').className += ' test-fail';
+            }
+
+            // Summary
+            const passCount = Object.values(results).filter(r => r).length;
+            const totalTests = Object.keys(results).length;
+            
+            console.log('ScrollingFooter Constructor Tests:', results);
+            console.log(`Passed: ${passCount}/${totalTests}`);
+            
+            if (passCount === 0) {
+                console.log('✅ ALL TESTS FAILED AS EXPECTED (TDD Red Phase)');
+            } else {
+                console.log('⚠️ Some tests passed - component may already exist');
+            }
+            
+            return results;
+        }
+
+        // Run tests when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Running ScrollingFooter Constructor Contract Tests...');
+            runConstructorTests();
+        });
+    </script>
+</body>
+</html>

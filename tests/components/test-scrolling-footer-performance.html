@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollingFooter Performance Contract Test</title>
+    <link rel="stylesheet" href="../../src/styles/components/scrolling-footer.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-container { background: white; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .test-pass { border-left: 5px solid #4CAF50; }
+        .test-fail { border-left: 5px solid #f44336; }
+        .test-footer { width: 100%; height: 60px; background: #333; color: white; border-radius: 3px; padding: 10px; }
+        .error { color: #f44336; font-weight: bold; }
+        .success { color: #4CAF50; font-weight: bold; }
+        .performance-metrics { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 3px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>ScrollingFooter Performance Contract Test</h1>
+    <p><strong>CRITICAL:</strong> This test MUST FAIL before ScrollingFooter component implementation.</p>
+    
+    <div class="test-container" id="test-fps-requirement">
+        <h3>T007.1: 60 FPS Animation Requirement</h3>
+        <div class="test-footer" id="footer-fps"></div>
+        <div id="result-fps"></div>
+        <div id="metrics-fps" class="performance-metrics" style="display:none;"></div>
+    </div>
+
+    <div class="test-container" id="test-memory-requirement">
+        <h3>T007.2: &lt;5MB Memory Footprint</h3>
+        <div class="test-footer" id="footer-memory"></div>
+        <div id="result-memory"></div>
+        <div id="metrics-memory" class="performance-metrics" style="display:none;"></div>
+    </div>
+
+    <div class="test-container" id="test-initialization-time">
+        <h3>T007.3: &lt;100ms Initialization Time</h3>
+        <div class="test-footer" id="footer-init"></div>
+        <div id="result-init"></div>
+        <div id="metrics-init" class="performance-metrics" style="display:none;"></div>
+    </div>
+
+    <div class="test-container" id="test-gpu-acceleration">
+        <h3>T007.4: GPU Acceleration Verification</h3>
+        <div class="test-footer" id="footer-gpu"></div>
+        <div id="result-gpu"></div>
+        <div id="metrics-gpu" class="performance-metrics" style="display:none;"></div>
+    </div>
+
+    <script>
+        // Contract Test: ScrollingFooter Performance Requirements
+        // Expected to FAIL until component is implemented
+        
+        class PerformanceTestRunner {
+            constructor() {
+                this.results = {
+                    fps: false,
+                    memory: false,
+                    initialization: false,
+                    gpuAcceleration: false
+                };
+                this.performanceObserver = null;
+            }
+
+            // Test T007.1: 60 FPS Animation Requirement
+            async testFPSRequirement() {
+                try {
+                    const container = document.getElementById('footer-fps');
+                    const config = {
+                        footer_text: "FPS performance test <separator> Should maintain 60fps <separator> Smooth animation",
+                        scroll_speed: 30,
+                        scroll_direction: "continuous"
+                    };
+
+                    const scrollingFooter = new ScrollingFooter(container, config);
+                    
+                    // Set up performance measurement
+                    let frameCount = 0;
+                    let lastTime = performance.now();
+                    let fpsValues = [];
+                    
+                    const measureFPS = () => {
+                        const currentTime = performance.now();
+                        const delta = currentTime - lastTime;
+                        const fps = 1000 / delta;
+                        
+                        fpsValues.push(fps);
+                        frameCount++;
+                        lastTime = currentTime;
+                        
+                        if (frameCount < 60) { // Measure for 60 frames
+                            requestAnimationFrame(measureFPS);
+                        } else {
+                            const averageFPS = fpsValues.reduce((a, b) => a + b, 0) / fpsValues.length;
+                            const minFPS = Math.min(...fpsValues);
+                            
+                            document.getElementById('metrics-fps').style.display = 'block';
+                            document.getElementById('metrics-fps').innerHTML = 
+                                `Average FPS: ${averageFPS.toFixed(2)}<br>Minimum FPS: ${minFPS.toFixed(2)}<br>Target: 60 FPS`;
+                            
+                            if (averageFPS >= 55 && minFPS >= 45) { // Allow some tolerance
+                                this.results.fps = true;
+                                document.getElementById('result-fps').innerHTML = 
+                                    '<span class="success">✓ UNEXPECTED PASS - 60 FPS requirement met</span>';
+                                document.getElementById('test-fps-requirement').className += ' test-pass';
+                            } else {
+                                document.getElementById('result-fps').innerHTML = 
+                                    '<span class="error">✗ FPS requirement not met</span>';
+                                document.getElementById('test-fps-requirement').className += ' test-fail';
+                            }
+                        }
+                    };
+                    
+                    await scrollingFooter.start();
+                    requestAnimationFrame(measureFPS);
+                    
+                } catch (error) {
+                    document.getElementById('result-fps').innerHTML = 
+                        `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                    document.getElementById('test-fps-requirement').className += ' test-fail';
+                }
+            }
+
+            // Test T007.2: <5MB Memory Footprint
+            async testMemoryRequirement() {
+                try {
+                    const container = document.getElementById('footer-memory');
+                    const config = {
+                        footer_text: "Memory test " + "very long text to duplicate ".repeat(20) + "<separator> Memory usage check",
+                        scroll_direction: "continuous"
+                    };
+
+                    // Measure memory before
+                    const initialMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
+                    
+                    const scrollingFooter = new ScrollingFooter(container, config);
+                    await scrollingFooter.start();
+                    
+                    // Force garbage collection if available (Chrome DevTools)
+                    if (window.gc) {
+                        window.gc();
+                    }
+                    
+                    setTimeout(() => {
+                        const finalMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
+                        const memoryIncrease = finalMemory - initialMemory;
+                        const memoryMB = memoryIncrease / (1024 * 1024);
+                        
+                        document.getElementById('metrics-memory').style.display = 'block';
+                        document.getElementById('metrics-memory').innerHTML = 
+                            `Memory increase: ${memoryMB.toFixed(2)} MB<br>Initial: ${(initialMemory / (1024 * 1024)).toFixed(2)} MB<br>Final: ${(finalMemory / (1024 * 1024)).toFixed(2)} MB<br>Target: <5 MB`;
+                        
+                        if (memoryMB < 5) {
+                            this.results.memory = true;
+                            document.getElementById('result-memory').innerHTML = 
+                                '<span class="success">✓ UNEXPECTED PASS - Memory requirement met</span>';
+                            document.getElementById('test-memory-requirement').className += ' test-pass';
+                        } else {
+                            document.getElementById('result-memory').innerHTML = 
+                                '<span class="error">✗ Memory footprint exceeds 5MB</span>';
+                            document.getElementById('test-memory-requirement').className += ' test-fail';
+                        }
+                    }, 1000);
+                    
+                } catch (error) {
+                    document.getElementById('result-memory').innerHTML = 
+                        `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                    document.getElementById('test-memory-requirement').className += ' test-fail';
+                }
+            }
+
+            // Test T007.3: <100ms Initialization Time
+            async testInitializationTime() {
+                try {
+                    const container = document.getElementById('footer-init');
+                    const config = {
+                        footer_text: "Initialization speed test <separator> Should be fast",
+                        scroll_direction: "continuous"
+                    };
+
+                    const startTime = performance.now();
+                    
+                    const scrollingFooter = new ScrollingFooter(container, config);
+                    const constructorTime = performance.now();
+                    
+                    await scrollingFooter.start();
+                    const initTime = performance.now();
+                    
+                    const constructorDuration = constructorTime - startTime;
+                    const startDuration = initTime - constructorTime;
+                    const totalDuration = initTime - startTime;
+                    
+                    document.getElementById('metrics-init').style.display = 'block';
+                    document.getElementById('metrics-init').innerHTML = 
+                        `Constructor: ${constructorDuration.toFixed(2)}ms<br>start(): ${startDuration.toFixed(2)}ms<br>Total: ${totalDuration.toFixed(2)}ms<br>Target: <100ms`;
+                    
+                    if (totalDuration < 100) {
+                        this.results.initialization = true;
+                        document.getElementById('result-init').innerHTML = 
+                            '<span class="success">✓ UNEXPECTED PASS - Initialization time requirement met</span>';
+                        document.getElementById('test-initialization-time').className += ' test-pass';
+                    } else {
+                        document.getElementById('result-init').innerHTML = 
+                            '<span class="error">✗ Initialization time exceeds 100ms</span>';
+                        document.getElementById('test-initialization-time').className += ' test-fail';
+                    }
+                    
+                } catch (error) {
+                    document.getElementById('result-init').innerHTML = 
+                        `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                    document.getElementById('test-initialization-time').className += ' test-fail';
+                }
+            }
+
+            // Test T007.4: GPU Acceleration Verification
+            async testGPUAcceleration() {
+                try {
+                    const container = document.getElementById('footer-gpu');
+                    const config = {
+                        footer_text: "GPU acceleration test <separator> Hardware accelerated",
+                        scroll_direction: "continuous"
+                    };
+
+                    const scrollingFooter = new ScrollingFooter(container, config);
+                    await scrollingFooter.start();
+                    
+                    setTimeout(() => {
+                        const scrollContent = container.querySelector('.scroll-content');
+                        if (scrollContent) {
+                            const computedStyle = window.getComputedStyle(scrollContent);
+                            const transform = computedStyle.transform;
+                            const willChange = computedStyle.willChange;
+                            const animationName = computedStyle.animationName;
+                            
+                            // Check for hardware acceleration indicators
+                            const hasTransform3d = transform.includes('matrix3d') || 
+                                                 computedStyle.transform.includes('translate3d');
+                            const hasWillChange = willChange === 'transform';
+                            const hasAnimation = animationName && animationName !== 'none';
+                            
+                            document.getElementById('metrics-gpu').style.display = 'block';
+                            document.getElementById('metrics-gpu').innerHTML = 
+                                `transform: ${transform}<br>will-change: ${willChange}<br>animation: ${animationName}<br>GPU hints detected: ${hasTransform3d || hasWillChange}`;
+                            
+                            if (hasAnimation && (hasTransform3d || hasWillChange)) {
+                                this.results.gpuAcceleration = true;
+                                document.getElementById('result-gpu').innerHTML = 
+                                    '<span class="success">✓ UNEXPECTED PASS - GPU acceleration detected</span>';
+                                document.getElementById('test-gpu-acceleration').className += ' test-pass';
+                            } else {
+                                document.getElementById('result-gpu').innerHTML = 
+                                    '<span class="error">✗ GPU acceleration not detected</span>';
+                                document.getElementById('test-gpu-acceleration').className += ' test-fail';
+                            }
+                        } else {
+                            document.getElementById('result-gpu').innerHTML = 
+                                '<span class="error">✗ scroll-content element not found</span>';
+                            document.getElementById('test-gpu-acceleration').className += ' test-fail';
+                        }
+                    }, 200);
+                    
+                } catch (error) {
+                    document.getElementById('result-gpu').innerHTML = 
+                        `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                    document.getElementById('test-gpu-acceleration').className += ' test-fail';
+                }
+            }
+
+            async runAllTests() {
+                console.log('Running ScrollingFooter Performance Contract Tests...');
+                
+                await this.testFPSRequirement();
+                await this.testMemoryRequirement();
+                await this.testInitializationTime();
+                await this.testGPUAcceleration();
+                
+                setTimeout(() => {
+                    const passCount = Object.values(this.results).filter(r => r).length;
+                    const totalTests = Object.keys(this.results).length;
+                    
+                    console.log('ScrollingFooter Performance Tests:', this.results);
+                    console.log(`Passed: ${passCount}/${totalTests}`);
+                    
+                    if (passCount === 0) {
+                        console.log('✅ ALL TESTS FAILED AS EXPECTED (TDD Red Phase)');
+                    } else {
+                        console.log('⚠️ Some tests passed - component may already exist or partially implemented');
+                    }
+                }, 2000);
+                
+                return this.results;
+            }
+        }
+
+        // Run tests when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            const testRunner = new PerformanceTestRunner();
+            testRunner.runAllTests();
+        });
+    </script>
+</body>
+</html>

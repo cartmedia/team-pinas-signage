@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollingFooter Events Contract Test</title>
+    <link rel="stylesheet" href="/src/styles/components/scrolling-footer.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-container { background: white; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .test-pass { border-left: 5px solid #4CAF50; }
+        .test-fail { border-left: 5px solid #f44336; }
+        .test-footer { width: 100%; height: 60px; background: #333; color: white; border-radius: 3px; padding: 10px; }
+        .error { color: #f44336; font-weight: bold; }
+        .success { color: #4CAF50; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>ScrollingFooter Events Contract Test</h1>
+    <p><strong>CRITICAL:</strong> This test MUST FAIL before ScrollingFooter component implementation.</p>
+    
+    <div class="test-container" id="test-animation-started">
+        <h3>T006.1: animation-started Event</h3>
+        <div class="test-footer" id="footer-started"></div>
+        <div id="result-started"></div>
+    </div>
+
+    <div class="test-container" id="test-animation-stopped">
+        <h3>T006.2: animation-stopped Event</h3>
+        <div class="test-footer" id="footer-stopped"></div>
+        <div id="result-stopped"></div>
+    </div>
+
+    <div class="test-container" id="test-performance-warning">
+        <h3>T006.3: performance-warning Event</h3>
+        <div class="test-footer" id="footer-performance"></div>
+        <div id="result-performance"></div>
+    </div>
+
+    <div class="test-container" id="test-event-details">
+        <h3>T006.4: Event Detail Validation</h3>
+        <div class="test-footer" id="footer-details"></div>
+        <div id="result-details"></div>
+    </div>
+
+    <script>
+        // Contract Test: ScrollingFooter Events
+        // Expected to FAIL until component is implemented
+        
+        function runEventTests() {
+            const results = {
+                animationStarted: false,
+                animationStopped: false,
+                performanceWarning: false,
+                eventDetails: false
+            };
+
+            // Test T006.1: animation-started Event
+            try {
+                const container = document.getElementById('footer-started');
+                const config = {
+                    footer_text: "Animation started event test <separator> Should fire",
+                    scroll_direction: "continuous",
+                    scroll_speed: 30
+                };
+                
+                let startedEventFired = false;
+                container.addEventListener('animation-started', (event) => {
+                    startedEventFired = true;
+                    
+                    // Validate event detail structure
+                    if (event.detail && 
+                        typeof event.detail.duration === 'number' &&
+                        typeof event.detail.repetitions === 'number' &&
+                        event.detail.duration > 0 &&
+                        event.detail.repetitions > 0) {
+                        results.animationStarted = true;
+                        document.getElementById('result-started').innerHTML = 
+                            '<span class="success">✓ UNEXPECTED PASS - animation-started event fired with valid detail</span>';
+                        document.getElementById('test-animation-started').className += ' test-pass';
+                    } else {
+                        document.getElementById('result-started').innerHTML = 
+                            '<span class="error">✗ animation-started event detail invalid</span>';
+                        document.getElementById('test-animation-started').className += ' test-fail';
+                    }
+                });
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                scrollingFooter.start().then(() => {
+                    setTimeout(() => {
+                        if (!startedEventFired) {
+                            document.getElementById('result-started').innerHTML = 
+                                '<span class="error">✗ animation-started event not fired</span>';
+                            document.getElementById('test-animation-started').className += ' test-fail';
+                        }
+                    }, 200);
+                });
+            } catch (error) {
+                document.getElementById('result-started').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-animation-started').className += ' test-fail';
+            }
+
+            // Test T006.2: animation-stopped Event
+            try {
+                const container = document.getElementById('footer-stopped');
+                const config = {
+                    footer_text: "Animation stopped event test <separator> Manual stop",
+                    scroll_direction: "continuous"
+                };
+                
+                let stoppedEventFired = false;
+                container.addEventListener('animation-stopped', (event) => {
+                    stoppedEventFired = true;
+                    
+                    // Validate event detail structure
+                    if (event.detail && 
+                        typeof event.detail.reason === 'string' &&
+                        ['manual', 'error', 'fallback'].includes(event.detail.reason)) {
+                        results.animationStopped = true;
+                        document.getElementById('result-stopped').innerHTML = 
+                            `<span class="success">✓ UNEXPECTED PASS - animation-stopped event with reason: ${event.detail.reason}</span>`;
+                        document.getElementById('test-animation-stopped').className += ' test-pass';
+                    } else {
+                        document.getElementById('result-stopped').innerHTML = 
+                            '<span class="error">✗ animation-stopped event detail invalid</span>';
+                        document.getElementById('test-animation-stopped').className += ' test-fail';
+                    }
+                });
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                scrollingFooter.start().then(() => {
+                    setTimeout(() => {
+                        scrollingFooter.stop(); // Should trigger animation-stopped event
+                        
+                        setTimeout(() => {
+                            if (!stoppedEventFired) {
+                                document.getElementById('result-stopped').innerHTML = 
+                                    '<span class="error">✗ animation-stopped event not fired</span>';
+                                document.getElementById('test-animation-stopped').className += ' test-fail';
+                            }
+                        }, 100);
+                    }, 100);
+                });
+            } catch (error) {
+                document.getElementById('result-stopped').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-animation-stopped').className += ' test-fail';
+            }
+
+            // Test T006.3: performance-warning Event
+            try {
+                const container = document.getElementById('footer-performance');
+                const config = {
+                    footer_text: "Performance warning test <separator> Low FPS simulation",
+                    scroll_direction: "continuous",
+                    scroll_speed: 10 // Very slow to potentially trigger performance issues
+                };
+                
+                let performanceEventFired = false;
+                container.addEventListener('performance-warning', (event) => {
+                    performanceEventFired = true;
+                    
+                    // Validate event detail structure
+                    if (event.detail && 
+                        typeof event.detail.fps === 'number' &&
+                        typeof event.detail.threshold === 'number' &&
+                        event.detail.fps < event.detail.threshold) {
+                        results.performanceWarning = true;
+                        document.getElementById('result-performance').innerHTML = 
+                            `<span class="success">✓ UNEXPECTED PASS - performance-warning event (FPS: ${event.detail.fps})</span>`;
+                        document.getElementById('test-performance-warning').className += ' test-pass';
+                    } else {
+                        document.getElementById('result-performance').innerHTML = 
+                            '<span class="error">✗ performance-warning event detail invalid</span>';
+                        document.getElementById('test-performance-warning').className += ' test-fail';
+                    }
+                });
+                
+                // Simulate poor performance scenario
+                const scrollingFooter = new ScrollingFooter(container, config);
+                
+                // Mock performance observer to trigger warning (if component exists)
+                if (scrollingFooter && scrollingFooter.performanceObserver) {
+                    // This would be handled by the component's performance monitoring
+                    setTimeout(() => {
+                        // Simulate triggering performance warning
+                        const mockWarningEvent = new CustomEvent('performance-warning', {
+                            detail: { fps: 45, threshold: 55 }
+                        });
+                        container.dispatchEvent(mockWarningEvent);
+                    }, 300);
+                }
+                
+                scrollingFooter.start().catch(() => {
+                    // Expected to fail
+                    setTimeout(() => {
+                        if (!performanceEventFired) {
+                            document.getElementById('result-performance').innerHTML = 
+                                '<span class="error">✗ performance-warning event not implemented</span>';
+                            document.getElementById('test-performance-warning').className += ' test-fail';
+                        }
+                    }, 500);
+                });
+            } catch (error) {
+                document.getElementById('result-performance').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-performance-warning').className += ' test-fail';
+            }
+
+            // Test T006.4: Event Detail Validation
+            try {
+                const container = document.getElementById('footer-details');
+                const config = {
+                    footer_text: "Event details validation <separator> Structure check",
+                    scroll_direction: "continuous",
+                    scroll_speed: 40
+                };
+                
+                const eventDetails = {};
+                
+                container.addEventListener('animation-started', (event) => {
+                    eventDetails.started = event.detail;
+                });
+                
+                container.addEventListener('animation-stopped', (event) => {
+                    eventDetails.stopped = event.detail;
+                    
+                    // Validate all collected event details
+                    const startedValid = eventDetails.started &&
+                        Number.isInteger(eventDetails.started.repetitions) &&
+                        typeof eventDetails.started.duration === 'number';
+                    
+                    const stoppedValid = eventDetails.stopped &&
+                        typeof eventDetails.stopped.reason === 'string';
+                    
+                    if (startedValid && stoppedValid) {
+                        results.eventDetails = true;
+                        document.getElementById('result-details').innerHTML = 
+                            '<span class="success">✓ UNEXPECTED PASS - All event details valid</span>';
+                        document.getElementById('test-event-details').className += ' test-pass';
+                    } else {
+                        document.getElementById('result-details').innerHTML = 
+                            '<span class="error">✗ Event detail validation failed</span>';
+                        document.getElementById('test-event-details').className += ' test-fail';
+                    }
+                });
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                scrollingFooter.start().then(() => {
+                    setTimeout(() => {
+                        scrollingFooter.stop();
+                    }, 150);
+                });
+                
+                setTimeout(() => {
+                    if (!eventDetails.started && !eventDetails.stopped) {
+                        document.getElementById('result-details').innerHTML = 
+                            '<span class="error">✗ No events fired for validation</span>';
+                        document.getElementById('test-event-details').className += ' test-fail';
+                    }
+                }, 500);
+                
+            } catch (error) {
+                document.getElementById('result-details').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-event-details').className += ' test-fail';
+            }
+
+            // Summary
+            setTimeout(() => {
+                const passCount = Object.values(results).filter(r => r).length;
+                const totalTests = Object.keys(results).length;
+                
+                console.log('ScrollingFooter Events Tests:', results);
+                console.log(`Passed: ${passCount}/${totalTests}`);
+                
+                if (passCount === 0) {
+                    console.log('✅ ALL TESTS FAILED AS EXPECTED (TDD Red Phase)');
+                } else {
+                    console.log('⚠️ Some tests passed - component may already exist');
+                }
+            }, 1000);
+            
+            return results;
+        }
+
+        // Run tests when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Running ScrollingFooter Events Contract Tests...');
+            runEventTests();
+        });
+    </script>
+</body>
+</html>

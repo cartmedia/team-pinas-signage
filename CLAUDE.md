@@ -39,11 +39,11 @@ Team Pinas Signage is a digital menu display system with Neon PostgreSQL databas
 
 ### Critical Implementation Details
 
-**Current State** (Branch: 002-skip-emergency-stuff):
-- **Refactoring Emergency Fixes**: Removing temporary solutions and implementing proper API integration
-- **Target Architecture**: Clean direct API calls with proper retry logic and error handling
-- **Removal Plan**: Eliminate CMS Connector pattern, HTML fallback content, and complex timeout logic
-- **New Approach**: Exponential backoff retry, meaningful error messages, 2-second load target
+**Current State** (Branch: 005-zorg-ervoor-dat):
+- **Footer Continuous Scrolling**: Implementing ticker-tape style scrolling footer animation
+- **Performance-First Approach**: GPU-accelerated CSS transforms with hardware acceleration
+- **Progressive Enhancement**: Graceful fallback to static footer on animation failure
+- **Real-time Configuration**: Live updates from admin panel without page refresh
 
 **Emergency Fixes Applied** (on main branch - being removed):
 - **CMS Connector Disabled**: The `/src/scripts/shared/cms-connector.js` is disabled in HTML due to configuration errors

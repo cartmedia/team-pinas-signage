@@ -882,8 +882,9 @@ class AdminInterface {
         // Update settings title based on organization name
         this.updateSettingsTitle(data.settings.organization_name);
         
-        // Load footer text lines
-        this.loadFooterTextLines(data.settings.footer_text);
+        // Load modern footer configuration instead of legacy text lines
+        // this.loadFooterTextLines(data.settings.footer_text); // Legacy - disabled
+        this.loadFooterConfig(); // Modern interface
         
         // Load footer color settings
         const footerTextColor = document.getElementById('footerTextColor');

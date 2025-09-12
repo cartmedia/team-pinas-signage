@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollingFooter stop() Method Contract Test</title>
+    <link rel="stylesheet" href="/src/styles/components/scrolling-footer.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-container { background: white; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .test-pass { border-left: 5px solid #4CAF50; }
+        .test-fail { border-left: 5px solid #f44336; }
+        .test-footer { width: 100%; height: 60px; background: #333; color: white; border-radius: 3px; padding: 10px; }
+        .error { color: #f44336; font-weight: bold; }
+        .success { color: #4CAF50; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>ScrollingFooter stop() Method Contract Test</h1>
+    <p><strong>CRITICAL:</strong> This test MUST FAIL before ScrollingFooter component implementation.</p>
+    
+    <div class="test-container" id="test-stop-method">
+        <h3>T005.1: stop() Method Exists</h3>
+        <div class="test-footer" id="footer-method"></div>
+        <div id="result-method"></div>
+    </div>
+
+    <div class="test-container" id="test-stop-animation">
+        <h3>T005.2: stop() Removes Animation</h3>
+        <div class="test-footer" id="footer-animation"></div>
+        <div id="result-animation"></div>
+    </div>
+
+    <div class="test-container" id="test-stop-cleanup">
+        <h3>T005.3: stop() Cleans Up Resources</h3>
+        <div class="test-footer" id="footer-cleanup"></div>
+        <div id="result-cleanup"></div>
+    </div>
+
+    <div class="test-container" id="test-stop-events">
+        <h3>T005.4: stop() Fires animation-stopped Event</h3>
+        <div class="test-footer" id="footer-events"></div>
+        <div id="result-events"></div>
+    </div>
+
+    <script>
+        // Contract Test: ScrollingFooter stop() Method
+        // Expected to FAIL until component is implemented
+        
+        function runStopTests() {
+            const results = {
+                method: false,
+                animation: false,
+                cleanup: false,
+                events: false
+            };
+
+            // Test T005.1: stop() Method Exists
+            try {
+                const container = document.getElementById('footer-method');
+                const config = {
+                    footer_text: "Stop method test <separator> Should exist",
+                    scroll_direction: "continuous"
+                };
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                
+                if (typeof scrollingFooter.stop === 'function') {
+                    results.method = true;
+                    document.getElementById('result-method').innerHTML = 
+                        '<span class="success">✓ UNEXPECTED PASS - stop() method exists</span>';
+                    document.getElementById('test-stop-method').className += ' test-pass';
+                } else {
+                    document.getElementById('result-method').innerHTML = 
+                        '<span class="error">✗ stop() method not found</span>';
+                    document.getElementById('test-stop-method').className += ' test-fail';
+                }
+            } catch (error) {
+                document.getElementById('result-method').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-stop-method').className += ' test-fail';
+            }
+
+            // Test T005.2: stop() Removes Animation
+            try {
+                const container = document.getElementById('footer-animation');
+                const config = {
+                    footer_text: "Animation removal test <separator> Stop scrolling",
+                    scroll_speed: 25,
+                    scroll_direction: "continuous"
+                };
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                
+                scrollingFooter.start().then((success) => {
+                    if (success) {
+                        // Animation should be running
+                        setTimeout(() => {
+                            const scrollContent = container.querySelector('.scroll-content');
+                            if (scrollContent) {
+                                const beforeStop = window.getComputedStyle(scrollContent);
+                                const animationBefore = beforeStop.animationName;
+                                
+                                // Stop the animation
+                                scrollingFooter.stop();
+                                
+                                setTimeout(() => {
+                                    const afterStop = window.getComputedStyle(scrollContent);
+                                    const animationAfter = afterStop.animationName;
+                                    
+                                    if (animationBefore !== 'none' && 
+                                        (animationAfter === 'none' || animationAfter === '')) {
+                                        results.animation = true;
+                                        document.getElementById('result-animation').innerHTML = 
+                                            '<span class="success">✓ UNEXPECTED PASS - Animation removed</span>';
+                                        document.getElementById('test-stop-animation').className += ' test-pass';
+                                    } else {
+                                        document.getElementById('result-animation').innerHTML = 
+                                            '<span class="error">✗ Animation not removed properly</span>';
+                                        document.getElementById('test-stop-animation').className += ' test-fail';
+                                    }
+                                }, 50);
+                            } else {
+                                document.getElementById('result-animation').innerHTML = 
+                                    '<span class="error">✗ .scroll-content not found</span>';
+                                document.getElementById('test-stop-animation').className += ' test-fail';
+                            }
+                        }, 100);
+                    }
+                });
+            } catch (error) {
+                document.getElementById('result-animation').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-stop-animation').className += ' test-fail';
+            }
+
+            // Test T005.3: stop() Cleans Up Resources
+            try {
+                const container = document.getElementById('footer-cleanup');
+                const config = {
+                    footer_text: "Cleanup test <separator> Resources freed",
+                    scroll_direction: "continuous"
+                };
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                
+                scrollingFooter.start().then(() => {
+                    // Check for performance observer
+                    const hasObserver = scrollingFooter.performanceObserver !== null;
+                    
+                    scrollingFooter.stop();
+                    
+                    setTimeout(() => {
+                        // After stop, resources should be cleaned up
+                        const observerCleanup = !scrollingFooter.performanceObserver || 
+                                              scrollingFooter.performanceObserver.disconnected;
+                        const animationIdCleanup = scrollingFooter.animationId === null;
+                        
+                        if ((hasObserver && observerCleanup) || animationIdCleanup) {
+                            results.cleanup = true;
+                            document.getElementById('result-cleanup').innerHTML = 
+                                '<span class="success">✓ UNEXPECTED PASS - Resources cleaned up</span>';
+                            document.getElementById('test-stop-cleanup').className += ' test-pass';
+                        } else {
+                            document.getElementById('result-cleanup').innerHTML = 
+                                '<span class="error">✗ Resources not properly cleaned up</span>';
+                            document.getElementById('test-stop-cleanup').className += ' test-fail';
+                        }
+                    }, 50);
+                });
+            } catch (error) {
+                document.getElementById('result-cleanup').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-stop-cleanup').className += ' test-fail';
+            }
+
+            // Test T005.4: stop() Fires animation-stopped Event
+            try {
+                const container = document.getElementById('footer-events');
+                const config = {
+                    footer_text: "Event test <separator> Stop event",
+                    scroll_direction: "continuous"
+                };
+                
+                let eventFired = false;
+                container.addEventListener('animation-stopped', (event) => {
+                    if (event.detail && 
+                        typeof event.detail.reason === 'string' &&
+                        event.detail.reason === 'manual') {
+                        results.events = true;
+                        document.getElementById('result-events').innerHTML = 
+                            '<span class="success">✓ UNEXPECTED PASS - animation-stopped event fired</span>';
+                        document.getElementById('test-stop-events').className += ' test-pass';
+                    } else {
+                        document.getElementById('result-events').innerHTML = 
+                            '<span class="error">✗ animation-stopped event missing correct detail</span>';
+                        document.getElementById('test-stop-events').className += ' test-fail';
+                    }
+                    eventFired = true;
+                });
+                
+                const scrollingFooter = new ScrollingFooter(container, config);
+                
+                scrollingFooter.start().then(() => {
+                    setTimeout(() => {
+                        scrollingFooter.stop();
+                        
+                        // Give event time to fire
+                        setTimeout(() => {
+                            if (!eventFired) {
+                                document.getElementById('result-events').innerHTML = 
+                                    '<span class="error">✗ animation-stopped event not fired</span>';
+                                document.getElementById('test-stop-events').className += ' test-fail';
+                            }
+                        }, 100);
+                    }, 50);
+                });
+            } catch (error) {
+                document.getElementById('result-events').innerHTML = 
+                    `<span class="error">✗ EXPECTED FAIL: ${error.message}</span>`;
+                document.getElementById('test-stop-events').className += ' test-fail';
+            }
+
+            // Summary
+            setTimeout(() => {
+                const passCount = Object.values(results).filter(r => r).length;
+                const totalTests = Object.keys(results).length;
+                
+                console.log('ScrollingFooter stop() Tests:', results);
+                console.log(`Passed: ${passCount}/${totalTests}`);
+                
+                if (passCount === 0) {
+                    console.log('✅ ALL TESTS FAILED AS EXPECTED (TDD Red Phase)');
+                } else {
+                    console.log('⚠️ Some tests passed - component may already exist');
+                }
+            }, 1000);
+            
+            return results;
+        }
+
+        // Run tests when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Running ScrollingFooter stop() Contract Tests...');
+            runStopTests();
+        });
+    </script>
+</body>
+</html>

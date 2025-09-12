@@ -334,20 +334,8 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log(`🎨 Applied footer background color: ${footerData.background_color}`);
       }
       
-      // Update footer content
-      const scrollingTextSpan = document.querySelector('.ScrollingText span');
-      if (scrollingTextSpan) {
-        // Replace separator with image tags for proper display
-        const formattedText = footerText.replace(/\|\|/g, 
-          ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ');
-        scrollingTextSpan.innerHTML = formattedText;
-        console.log('📝 Footer content updated from API');
-        
-        // Restart animation with new content (if function is available)
-        if (typeof setAnimationDuration === 'function') {
-          setAnimationDuration();
-        }
-      }
+      // Footer content now handled by ScrollingFooter component
+      // Legacy footer update removed to prevent conflicts
     }
   }
 
@@ -620,64 +608,84 @@ document.addEventListener("DOMContentLoaded", function () {
   let footerText = ""; // No fallback content - only show footer if database has content
   let footerContinuous = true; // Default to continuous scrolling
   let footerInitialized = false;
+  let scrollingFooterInstance = null; // ScrollingFooter component instance
 
   function updateFooterContent() {
-    if (!scrollingTextSpan) return;
-    
-    // Split text by custom separator and add SVG dividers
-    const textParts = footerText.split('||').filter(part => part.trim());
+    // Get footer container (now using #footer-text span element)
+    const footerContainer = document.getElementById('footer-text');
+    if (!footerContainer) {
+      console.error('ScrollingFooter: footer-text element not found');
+      return;
+    }
     
     // Always ensure footer is visible - never hide it
-    const footerContainer = document.querySelector('.SignageFooter');
-    if (footerContainer) {
-      footerContainer.style.display = 'block';
+    const signageFooter = document.querySelector('.SignageFooter');
+    if (signageFooter) {
+      signageFooter.style.display = 'block';
     }
     
     // Only update content if we have valid database content
-    if (textParts.length === 0 || !footerText.trim()) {
+    if (!footerText || !footerText.trim()) {
       console.log('⚠️ No valid database footer content, keeping HTML fallback');
       return;
-    } else {
-      console.log('✅ Updating footer with database content');
     }
     
-    let htmlContent = '';
+    console.log('✅ Updating footer with ScrollingFooter component');
     
-    // Get per-row color settings if available
-    const footerRowColors = displaySettings?.settings?.footer_row_colors;
-    const usePerRowColors = footerRowColors && Array.isArray(footerRowColors);
-    
-    // Create the scrolling content with SVG separators and optional per-row colors
-    textParts.forEach((part, index) => {
-      let partContent = part.trim();
-      
-      // Apply per-row color if specified
-      if (usePerRowColors && footerRowColors[index]) {
-        const colorClass = footerRowColors[index] === 'light' ? 'footer-text-light' : 'footer-text-dark';
-        partContent = `<span class="${colorClass}">${partContent}</span>`;
-        console.log(`🎨 Applied ${colorClass} to row ${index + 1}`);
-      }
-      
-      htmlContent += partContent;
-      // Add SVG separator after each part
-      htmlContent += '<img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" />';
-    });
-    
-    if (footerContinuous) {
-      // Voor echte continue scrolling: dupliceer de content zonder extra spacing
-      scrollingTextSpan.innerHTML = htmlContent + htmlContent;
-      scrollingTextSpan.style.animationName = 'scrollTextContinuous';
-    } else {
-      // Discrete mode: enkele content met natuurlijke pauze
-      scrollingTextSpan.innerHTML = htmlContent;
-      scrollingTextSpan.style.animationName = 'scrollTextDiscrete';
+    // Stop existing ScrollingFooter instance if it exists
+    if (scrollingFooterInstance) {
+      scrollingFooterInstance.stop();
+      scrollingFooterInstance = null;
     }
     
-    // Set animation immediately after content is set
-    requestAnimationFrame(() => {
-      setAnimationDuration();
+    try {
+      // Create ScrollingFooter configuration from current footer data
+      const scrollingFooterConfig = {
+        footer_text: footerText.replace(/\|\|/g, '<separator>'), // Convert back to <separator> format
+        text_color: document.body.style.getPropertyValue('--footer-text-color') || '#101010',
+        font_size: document.body.style.getPropertyValue('--footer-font-size') || '3vh',
+        scroll_speed: footerSpeed || 30,
+        scroll_direction: footerContinuous ? 'continuous' : 'static'
+      };
+      
+      console.log('ScrollingFooter config:', scrollingFooterConfig);
+      
+      // Create new ScrollingFooter instance
+      scrollingFooterInstance = new ScrollingFooter(footerContainer, scrollingFooterConfig);
+      
+      // Add event listeners for monitoring
+      footerContainer.addEventListener('animation-started', (event) => {
+        console.log('🎬 Footer animation started:', event.detail);
+        footerInitialized = true;
+      });
+      
+      footerContainer.addEventListener('animation-stopped', (event) => {
+        console.log('⏹️ Footer animation stopped:', event.detail);
+      });
+      
+      footerContainer.addEventListener('performance-warning', (event) => {
+        console.warn('⚠️ Footer performance warning:', event.detail);
+      });
+      
+      // Start the scrolling footer
+      scrollingFooterInstance.start().then((success) => {
+        if (success) {
+          console.log('✅ ScrollingFooter started successfully');
+        } else {
+          console.log('ℹ️ ScrollingFooter using static fallback');
+        }
+      }).catch((error) => {
+        console.error('❌ ScrollingFooter failed to start:', error);
+        // Fallback to static text
+        footerContainer.textContent = footerText.replace(/\|\|/g, ' 🏰 ');
+      });
+      
+    } catch (error) {
+      console.error('❌ ScrollingFooter component error:', error);
+      // Fallback to static text display
+      footerContainer.textContent = footerText.replace(/\|\|/g, ' 🏰 ');
       footerInitialized = true;
-    });
+    }
   }
 
   function setAnimationDuration() {
@@ -725,7 +733,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Start animation immediately with HTML content
     if (scrollingTextSpan && scrollingTextSpan.innerHTML.trim()) {
       console.log('🎬 Starting footer animation with HTML content immediately');
-      setAnimationDuration();
+      // setAnimationDuration(); // Handled by ScrollingFooter component
     }
   }
 
@@ -743,7 +751,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Map footer API response to display properties
         footerSpeed = parseInt(footerData.scroll_speed) || 30;
         footerText = footerData.footer_text.trim().replace(/<separator>/g, '||'); // Convert all separator tags
-        footerContinuous = footerData.scroll_direction !== 'static';
+        footerContinuous = footerData.scroll_direction === 'continuous';
         
         // Apply footer text color if provided
         if (footerData.text_color) {
@@ -782,7 +790,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (scrollingTextSpan) {
     scrollingTextSpan.addEventListener("animationiteration", () => {
       if (footerInitialized) {
-        setAnimationDuration();
+        // setAnimationDuration(); // Handled by ScrollingFooter component
       }
     });
   }

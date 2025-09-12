@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollingFooter Text Duplication Validation</title>
+    <link rel="stylesheet" href="../../src/styles/components/scrolling-footer.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-container { background: white; padding: 20px; margin: 10px 0; border-radius: 5px; border: 2px solid #ddd; }
+        .test-pass { border-color: #4CAF50; background: #f9fff9; }
+        .test-fail { border-color: #f44336; background: #fff9f9; }
+        .test-footer { width: 800px; height: 60px; background: #333; color: white; border-radius: 3px; padding: 10px; margin: 10px 0; }
+        .result { font-weight: bold; margin: 10px 0; }
+        .pass { color: #4CAF50; }
+        .fail { color: #f44336; }
+        .details { font-family: monospace; background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 3px; font-size: 12px; }
+        .footer-content { border: 1px solid #ccc; padding: 10px; margin: 5px 0; max-height: 100px; overflow-y: auto; background: white; }
+    </style>
+</head>
+<body>
+    <h1>ScrollingFooter Text Duplication Validation</h1>
+    <p><strong>Purpose:</strong> Verify that text segments are properly duplicated and separated for seamless scrolling.</p>
+    
+    <div class="test-container" id="test-short-text">
+        <h3>Test 1: Short Text - Multiple Duplications Needed</h3>
+        <div class="test-footer" id="footer-short"></div>
+        <div id="result-short" class="result"></div>
+        <div id="details-short" class="details"></div>
+        <div id="content-short" class="footer-content"></div>
+    </div>
+
+    <div class="test-container" id="test-long-text">
+        <h3>Test 2: Long Text - Minimal Duplication</h3>
+        <div class="test-footer" id="footer-long"></div>
+        <div id="result-long" class="result"></div>
+        <div id="details-long" class="details"></div>
+        <div id="content-long" class="footer-content"></div>
+    </div>
+
+    <div class="test-container" id="test-multi-segment">
+        <h3>Test 3: Multi-Segment Text with Separators</h3>
+        <div class="test-footer" id="footer-multi"></div>
+        <div id="result-multi" class="result"></div>
+        <div id="details-multi" class="details"></div>
+        <div id="content-multi" class="footer-content"></div>
+    </div>
+
+    <script src="../../src/scripts/display/components/ScrollingFooter.js"></script>
+    <script>
+        // Text Duplication Validation Test Suite
+        
+        function validateTextDuplication(containerId, config, testName) {
+            try {
+                const container = document.getElementById(containerId);
+                const scrollingFooter = new ScrollingFooter(container, config);
+                
+                return scrollingFooter.start().then((success) => {
+                    if (!success) {
+                        throw new Error('ScrollingFooter start() returned false');
+                    }
+                    
+                    // Wait for DOM to be fully created
+                    setTimeout(() => {
+                        const scrollContent = container.querySelector('.scroll-content');
+                        if (!scrollContent) {
+                            throw new Error('scroll-content element not found');
+                        }
+                        
+                        // Count text segments and separators
+                        const textSegments = scrollContent.querySelectorAll('.text-segment');
+                        const separators = scrollContent.querySelectorAll('.separator');
+                        
+                        // Calculate expected segments based on original config
+                        const originalSegments = config.footer_text.split('<separator>').filter(s => s.trim().length > 0);
+                        const expectedSegmentsPerRepetition = originalSegments.length;
+                        const repetitions = scrollingFooter.animationState.repetitions;
+                        const expectedTotalSegments = expectedSegmentsPerRepetition * repetitions;
+                        const expectedSeparators = expectedTotalSegments - 1; // One less separator than segments
+                        
+                        // Validation results
+                        const segmentCountValid = textSegments.length === expectedTotalSegments;
+                        const separatorCountValid = separators.length === expectedSeparators;
+                        const contentOrder = validateContentOrder(scrollContent, originalSegments, repetitions);
+                        
+                        const allValid = segmentCountValid && separatorCountValid && contentOrder.valid;
+                        
+                        // Update UI
+                        const resultElement = document.getElementById(`result-${testName}`);
+                        const detailsElement = document.getElementById(`details-${testName}`);
+                        const contentElement = document.getElementById(`content-${testName}`);
+                        const containerElement = document.getElementById(`test-${testName}`);
+                        
+                        if (allValid) {
+                            resultElement.innerHTML = '✅ <span class="pass">PASS - Text duplication logic working correctly</span>';
+                            containerElement.className += ' test-pass';
+                        } else {
+                            resultElement.innerHTML = '❌ <span class="fail">FAIL - Text duplication logic has issues</span>';
+                            containerElement.className += ' test-fail';
+                        }
+                        
+                        detailsElement.innerHTML = `
+                            Original segments: ${expectedSegmentsPerRepetition}<br>
+                            Repetitions calculated: ${repetitions}<br>
+                            Expected total segments: ${expectedTotalSegments}<br>
+                            Actual segments: ${textSegments.length} ${segmentCountValid ? '✅' : '❌'}<br>
+                            Expected separators: ${expectedSeparators}<br>
+                            Actual separators: ${separators.length} ${separatorCountValid ? '✅' : '❌'}<br>
+                            Content order: ${contentOrder.valid ? '✅ Correct' : '❌ ' + contentOrder.error}<br>
+                            Container width: ${scrollingFooter.animationState.containerWidth}px<br>
+                            Content width: ${scrollingFooter.animationState.contentWidth}px
+                        `;
+                        
+                        // Show actual DOM content
+                        contentElement.innerHTML = scrollContent.innerHTML;
+                        
+                        console.log(`${testName} Test Results:`, {
+                            segmentCountValid,
+                            separatorCountValid,
+                            contentOrder,
+                            repetitions,
+                            containerWidth: scrollingFooter.animationState.containerWidth,
+                            contentWidth: scrollingFooter.animationState.contentWidth
+                        });
+                        
+                    }, 100);
+                });
+                
+            } catch (error) {
+                const resultElement = document.getElementById(`result-${testName}`);
+                const detailsElement = document.getElementById(`details-${testName}`);
+                const containerElement = document.getElementById(`test-${testName}`);
+                
+                resultElement.innerHTML = `❌ <span class="fail">ERROR: ${error.message}</span>`;
+                detailsElement.innerHTML = `Error during test execution: ${error.stack}`;
+                containerElement.className += ' test-fail';
+                
+                console.error(`${testName} Test Error:`, error);
+            }
+        }
+        
+        function validateContentOrder(scrollContent, originalSegments, repetitions) {
+            const allElements = Array.from(scrollContent.children);
+            let segmentIndex = 0;
+            let repetitionIndex = 0;
+            
+            for (let i = 0; i < allElements.length; i++) {
+                const element = allElements[i];
+                
+                if (element.classList.contains('text-segment')) {
+                    const expectedText = originalSegments[segmentIndex];
+                    const actualText = element.textContent.trim();
+                    
+                    if (actualText !== expectedText) {
+                        return {
+                            valid: false,
+                            error: `Segment ${i}: Expected "${expectedText}", got "${actualText}"`
+                        };
+                    }
+                    
+                    segmentIndex++;
+                    
+                    // Check if we completed a repetition
+                    if (segmentIndex >= originalSegments.length) {
+                        segmentIndex = 0;
+                        repetitionIndex++;
+                    }
+                    
+                } else if (element.classList.contains('separator')) {
+                    // Separators should be properly placed between segments
+                    // (validation logic can be expanded here if needed)
+                }
+            }
+            
+            return { valid: true };
+        }
+        
+        // Run tests when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Running ScrollingFooter Text Duplication Validation Tests...');
+            
+            // Test 1: Short text that needs multiple duplications
+            validateTextDuplication('footer-short', {
+                footer_text: "Short <separator> Text",
+                scroll_direction: "continuous",
+                scroll_speed: 30,
+                text_color: "#ffffff",
+                font_size: "2vh"
+            }, 'short');
+            
+            // Test 2: Long text that needs minimal duplication  
+            setTimeout(() => {
+                validateTextDuplication('footer-long', {
+                    footer_text: "This is a very long piece of footer text that should require fewer duplications because it already fills most of the screen width when rendered <separator> Additional segment to test multi-segment handling <separator> Third segment for comprehensive testing",
+                    scroll_direction: "continuous",
+                    scroll_speed: 25,
+                    text_color: "#ffffff",
+                    font_size: "2vh"
+                }, 'long');
+            }, 200);
+            
+            // Test 3: Multiple segments with separators
+            setTimeout(() => {
+                validateTextDuplication('footer-multi', {
+                    footer_text: "Segment A <separator> Segment B <separator> Segment C <separator> Segment D",
+                    scroll_direction: "continuous", 
+                    scroll_speed: 35,
+                    text_color: "#ffffff",
+                    font_size: "2vh"
+                }, 'multi');
+            }, 400);
+            
+            // Summary after all tests
+            setTimeout(() => {
+                console.log('✅ All ScrollingFooter Text Duplication Validation Tests Completed');
+                
+                const allContainers = document.querySelectorAll('[id^="test-"]');
+                const passCount = document.querySelectorAll('.test-pass').length;
+                const totalTests = allContainers.length;
+                
+                console.log(`Results: ${passCount}/${totalTests} tests passed`);
+                
+                if (passCount === totalTests) {
+                    console.log('🎉 ALL TEXT DUPLICATION TESTS PASSED - Component working correctly!');
+                } else {
+                    console.log('⚠️ Some text duplication tests failed - review implementation');
+                }
+            }, 800);
+        });
+    </script>
+</body>
+</html>
