@@ -95,6 +95,38 @@ class AdminInterface {
       this.saveDisplaySettings();
     });
 
+    // Footer management handlers
+    safeAddEventListener('saveFooterConfig', 'click', () => {
+      this.saveFooterConfig();
+    });
+    
+    safeAddEventListener('saveFooterSettings', 'click', () => {
+      this.saveFooterConfig();
+    });
+
+    safeAddEventListener('loadFooterConfig', 'click', () => {
+      this.loadFooterConfig();
+    });
+
+    // Footer items management
+    safeAddEventListener('addFooterItem', 'click', () => {
+      this.addFooterItem();
+    });
+
+    // Footer preview handlers - updated for new interface
+    const footerInputs = ['footerTextColor', 'footerBackgroundColor', 'footerFontSize', 'footerDividerImage', 'footerScrollSpeed', 'footerScrollDirection'];
+    footerInputs.forEach(inputId => {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.addEventListener('input', () => {
+          this.updateFooterPreview();
+        });
+        input.addEventListener('change', () => {
+          this.updateFooterPreview();
+        });
+      }
+    });
+
     // Settings navigation handlers
     this.setupSettingsNavigation();
 
@@ -920,6 +952,323 @@ class AdminInterface {
     }
   }
 
+  // Footer Management Methods
+  async loadFooterConfig() {
+    try {
+      console.log('Loading footer configuration...');
+      const response = await this.apiCall('/.netlify/functions/footer');
+      
+      if (response.ok) {
+        const footerData = await response.json();
+        this.populateFooterForm(footerData);
+        console.log('Footer configuration loaded:', footerData);
+      } else if (response.status === 404) {
+        console.log('No active footer configuration found');
+        this.clearFooterForm();
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error loading footer config:', error);
+      this.showToast('Fout bij laden footer configuratie: ' + error.message, 'error');
+    }
+  }
+
+  populateFooterForm(footerData) {
+    // Populate footer form fields
+    const textColorEl = document.getElementById('footerTextColor');
+    const backgroundColorEl = document.getElementById('footerBackgroundColor');
+    const scrollSpeedEl = document.getElementById('footerScrollSpeed');
+    const scrollDirectionEl = document.getElementById('footerScrollDirection');
+    const dividerImageEl = document.getElementById('footerDividerImage');
+    const fontSizeEl = document.getElementById('footerFontSize');
+
+    // Populate the footer items using the new interface
+    this.populateFooterItems(footerData.footer_text || '');
+    
+    if (textColorEl) textColorEl.value = footerData.text_color || '#FF0000';
+    if (backgroundColorEl) backgroundColorEl.value = footerData.background_color || '#FFFFFF';
+    if (scrollSpeedEl) scrollSpeedEl.value = footerData.scroll_speed || 30;
+    if (scrollDirectionEl) scrollDirectionEl.value = footerData.scroll_direction || 'continuous';
+    if (dividerImageEl) dividerImageEl.value = footerData.divider_image || 'assets/images/pinas_kroon.svg';
+    if (fontSizeEl) fontSizeEl.value = footerData.font_size || '4vh';
+
+    // Update preview if available
+    this.updateFooterPreview();
+  }
+
+  clearFooterForm() {
+    // Clear footer items
+    const container = document.getElementById('footerItemsContainer');
+    if (container) {
+      container.innerHTML = '';
+    }
+    
+    // Reset to defaults and add one empty item
+    this.addFooterItem();
+    
+    // Clear other footer form fields
+    const textColorEl = document.getElementById('footerTextColor');
+    const backgroundColorEl = document.getElementById('footerBackgroundColor');
+    const scrollSpeedEl = document.getElementById('footerScrollSpeed');
+    const scrollDirectionEl = document.getElementById('footerScrollDirection');
+    const dividerImageEl = document.getElementById('footerDividerImage');
+    const fontSizeEl = document.getElementById('footerFontSize');
+    
+    if (textColorEl) textColorEl.value = '#FF0000';
+    if (backgroundColorEl) backgroundColorEl.value = '#FFFFFF';
+    if (scrollSpeedEl) scrollSpeedEl.value = '30';
+    if (scrollDirectionEl) scrollDirectionEl.value = 'continuous';
+    if (dividerImageEl) dividerImageEl.value = 'assets/images/pinas_kroon.svg';
+    if (fontSizeEl) fontSizeEl.value = '4vh';
+  }
+
+  async saveFooterConfig() {
+    try {
+      // Collect footer items from the dynamic interface
+      const footerItems = this.collectFooterItems();
+      const textColor = document.getElementById('footerTextColor')?.value;
+      const backgroundColor = document.getElementById('footerBackgroundColor')?.value;
+      const scrollSpeed = document.getElementById('footerScrollSpeed')?.value;
+      const scrollDirection = document.getElementById('footerScrollDirection')?.value;
+      const dividerImage = document.getElementById('footerDividerImage')?.value;
+      const fontSize = document.getElementById('footerFontSize')?.value;
+
+      // Validate required fields
+      if (footerItems.length === 0) {
+        this.showToast('Voeg minimaal één footer item toe', 'error');
+        return;
+      }
+
+      // Combine footer items with <separator> tags
+      const footerText = footerItems.join('<separator>');
+
+      const footerData = {
+        footer_text: footerText,
+        text_color: textColor || '#FF0000',
+        background_color: backgroundColor || '#FFFFFF',
+        scroll_speed: parseInt(scrollSpeed) || 30,
+        scroll_direction: scrollDirection || 'continuous',
+        divider_image: dividerImage || 'assets/images/pinas_kroon.svg',
+        font_size: fontSize || '4vh'
+      };
+
+      console.log('Saving footer configuration:', footerData);
+
+      // Try to update first, then create if not found
+      let response = await this.apiCall('/.netlify/functions/footer', {
+        method: 'PUT',
+        body: JSON.stringify(footerData)
+      });
+
+      if (response.status === 404) {
+        // No active config exists, create new one
+        response = await this.apiCall('/.netlify/functions/footer', {
+          method: 'POST',
+          body: JSON.stringify(footerData)
+        });
+      }
+
+      if (response.ok) {
+        const result = await response.json();
+        this.showToast('Footer configuratie opgeslagen!');
+        console.log('Footer configuration saved:', result);
+        
+        // Reload the configuration to show updated data
+        await this.loadFooterConfig();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save footer configuration');
+      }
+    } catch (error) {
+      console.error('Error saving footer config:', error);
+      this.showToast('Fout bij opslaan footer configuratie: ' + error.message, 'error');
+    }
+  }
+
+  // Footer Items Management Functions
+  collectFooterItems() {
+    const container = document.getElementById('footerItemsContainer');
+    if (!container) return [];
+    
+    const inputs = container.querySelectorAll('input.footer-item-text');
+    return Array.from(inputs)
+      .map(input => input.value.trim())
+      .filter(text => text.length > 0);
+  }
+
+  addFooterItem(text = '') {
+    const container = document.getElementById('footerItemsContainer');
+    const emptyState = document.getElementById('footerItemsEmpty');
+    
+    if (!container) return;
+
+    // Hide empty state when adding items
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const itemIndex = Date.now(); // Simple unique ID
+    const itemHtml = `
+      <div class="footer-item flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800" data-item-id="${itemIndex}">
+        <div class="flex-shrink-0 text-gray-400">
+          <i class="fas fa-grip-vertical cursor-move"></i>
+        </div>
+        <input type="text" class="footer-item-text flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+               placeholder="Footer tekst..." value="${text}">
+        <button type="button" class="remove-footer-item flex-shrink-0 text-red-500 hover:text-red-700 p-2">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', itemHtml);
+    
+    // Add event listener to remove button
+    const newItem = container.lastElementChild;
+    const removeBtn = newItem.querySelector('.remove-footer-item');
+    removeBtn.addEventListener('click', () => this.removeFooterItem(itemIndex));
+    
+    // Add event listeners to input for real-time preview updates
+    const newInput = newItem.querySelector('.footer-item-text');
+    newInput.addEventListener('input', () => this.updateFooterPreview());
+    newInput.addEventListener('blur', () => this.updateFooterPreview());
+    newInput.focus();
+    
+    this.updateEmptyState();
+    
+    // Update preview immediately
+    this.updateFooterPreview();
+  }
+
+  removeFooterItem(itemId) {
+    const item = document.querySelector(`[data-item-id="${itemId}"]`);
+    if (item) {
+      item.remove();
+      this.updateEmptyState();
+      // Update preview after removing item
+      this.updateFooterPreview();
+    }
+  }
+
+  updateEmptyState() {
+    const container = document.getElementById('footerItemsContainer');
+    const emptyState = document.getElementById('footerItemsEmpty');
+    
+    if (!container || !emptyState) return;
+    
+    const hasItems = container.children.length > 0;
+    
+    if (hasItems) {
+      emptyState.classList.add('hidden');
+    } else {
+      emptyState.classList.remove('hidden');
+    }
+  }
+
+  populateFooterItems(footerText) {
+    const container = document.getElementById('footerItemsContainer');
+    if (!container) return;
+    
+    // Clear existing items
+    container.innerHTML = '';
+    
+    if (footerText && footerText.trim()) {
+      // Split by <separator> and create items
+      const items = footerText.split('<separator>').map(item => item.trim()).filter(item => item.length > 0);
+      
+      if (items.length > 0) {
+        items.forEach(item => this.addFooterItem(item));
+      } else {
+        // If no valid items, add one default item
+        this.addFooterItem();
+      }
+    } else {
+      // Add one default item if no footer text
+      this.addFooterItem();
+    }
+    
+    this.updateEmptyState();
+    
+    // Update preview after populating items
+    this.updateFooterPreview();
+  }
+
+  updateFooterPreview() {
+    const previewEl = document.getElementById('footerPreview');
+    if (!previewEl) return;
+
+    // Get all footer items from the new interface
+    const footerItems = this.collectFooterItems();
+    const textColor = document.getElementById('footerTextColor')?.value || '#000000';
+    const backgroundColor = document.getElementById('footerBackgroundColor')?.value || '#FFFFFF';
+    const fontSize = document.getElementById('footerFontSize')?.value || '4vh';
+    const dividerImage = document.getElementById('footerDividerImage')?.value || 'assets/images/pinas_kroon.svg';
+
+    // Calculate contrast for readability
+    const contrastColor = this.getContrastingColor(backgroundColor);
+
+    if (footerItems.length === 0) {
+      previewEl.innerHTML = `
+        <div style="background: ${backgroundColor}; color: ${contrastColor}; padding: 16px; border-radius: 6px; text-align: center; border: 2px dashed #ccc;">
+          <i class="fas fa-text-width text-2xl mb-2 opacity-50"></i>
+          <p class="text-sm opacity-70">Geen footer items - voeg items toe om preview te zien</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Create preview with separator icons
+    let previewContent = '';
+    footerItems.forEach((item, index) => {
+      previewContent += `<span style="color: ${textColor};">${item}</span>`;
+      if (index < footerItems.length - 1) {
+        // Add separator icon between items
+        previewContent += `<img src="${dividerImage}" alt="separator" style="height: 1em; width: auto; margin: 0 8px; vertical-align: middle; opacity: 0.8;" />`;
+      }
+    });
+
+    previewEl.innerHTML = `
+      <div style="
+        background: ${backgroundColor}; 
+        color: ${textColor}; 
+        font-size: calc(${fontSize} * 0.5); 
+        padding: 16px; 
+        border-radius: 6px; 
+        overflow: hidden; 
+        white-space: nowrap; 
+        text-align: center;
+        border: 1px solid rgba(0,0,0,0.1);
+        position: relative;
+      ">
+        <div style="display: inline-block; animation: scroll 20s linear infinite;">
+          ${previewContent}
+        </div>
+        <div style="position: absolute; top: 4px; right: 8px; font-size: 10px; opacity: 0.5; color: ${contrastColor};">
+          Preview
+        </div>
+      </div>
+      <style>
+        @keyframes scroll {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+      </style>
+    `;
+  }
+
+  // Helper function to get contrasting color for readability
+  getContrastingColor(hexColor) {
+    // Convert hex to RGB
+    const r = parseInt(hexColor.substr(1, 2), 16);
+    const g = parseInt(hexColor.substr(3, 2), 16);
+    const b = parseInt(hexColor.substr(5, 2), 16);
+    
+    // Calculate relative luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return black for light backgrounds, white for dark backgrounds
+    return luminance > 0.5 ? '#000000' : '#FFFFFF';
+  }
+
   /**
    * Update settings title based on organization name
    */
@@ -986,10 +1335,12 @@ class AdminInterface {
       targetPanel.classList.remove('hidden');
     }
     
-    // Show/hide subcategories for footer
+    // Show/hide subcategories for footer and load footer config
     const footerSubcategories = document.querySelector('[data-category="footer"]').parentElement.querySelector('.space-y-1');
     if (category === 'footer' && footerSubcategories) {
       footerSubcategories.classList.remove('hidden');
+      // Load footer configuration when switching to footer settings
+      this.loadFooterConfig();
     } else if (footerSubcategories) {
       footerSubcategories.classList.add('hidden');
     }
@@ -1681,8 +2032,9 @@ class AdminInterface {
         this.renderProducts();
         break;
       case 'settings':
-        // Reload display settings
+        // Reload display settings and footer configuration
         this.loadDisplaySettings();
+        this.loadFooterConfig();
         break;
     }
   }
