@@ -1,8 +1,42 @@
 /* ScrollingFooter Component Styles
  * Hardware-accelerated CSS animations for footer continuous scrolling
  * Performance target: 60fps with GPU acceleration
+ * Enhanced with comprehensive performance optimizations
  */
 
+/* SignageFooter base container - integrates with new CSS architecture */
+.SignageFooter {
+  /* CSS Custom Properties for dynamic configuration */
+  --footer-text-color: var(--footer-text-color, #101010);
+  --footer-bg-color: var(--footer-bg-color, #c19d6c);
+  --footer-font-size: var(--footer-font-size, 3vh);
+  --footer-scroll-speed: var(--footer-scroll-speed, 50px);
+  --footer-animation-duration: var(--footer-animation-duration, 10s);
+  --footer-content-width: var(--footer-content-width, 100%);
+  --footer-will-change: var(--footer-will-change, transform);
+  --footer-backface-visibility: var(--footer-backface-visibility, hidden);
+  --footer-animation-state: var(--footer-animation-state, running);
+  
+  /* Base container properties */
+  position: relative;
+  width: 100%;
+  height: var(--footer-height, 7.8vh);
+  
+  /* Background and styling */
+  background-color: var(--footer-bg-color);
+  color: var(--footer-text-color);
+  
+  /* Performance optimizations */
+  overflow: hidden;
+  contain: layout style paint;
+  
+  /* Initial state: hidden */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+/* Legacy class support for backward compatibility */
 .scrolling-footer {
   overflow: hidden;
   white-space: nowrap;
@@ -12,8 +46,39 @@
   /* Force GPU layer for hardware acceleration */
   transform: translateZ(0);
   will-change: transform;
+  /* Ensure content is vertically centered */
+  display: flex;
+  align-items: center;
 }
 
+/* Modern scrolling footer content container */
+.scrolling-footer-content {
+  display: inline-block;
+  white-space: nowrap;
+  
+  /* Performance optimizations */
+  will-change: var(--footer-will-change);
+  backface-visibility: var(--footer-backface-visibility);
+  perspective: 1000px;
+  transform: translateZ(0); /* Force GPU layer */
+  
+  /* Animation properties - applied dynamically */
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: forwards;
+  animation-play-state: var(--footer-animation-state);
+  
+  /* Typography */
+  font-size: var(--footer-font-size);
+  line-height: 1.2;
+  vertical-align: middle;
+  
+  /* Ensure smooth rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Legacy support */
 .scroll-content {
   display: inline-block;
   /* Animation applied dynamically via JavaScript */
@@ -24,8 +89,46 @@
   /* Prevent subpixel rendering issues */
   backface-visibility: hidden;
   perspective: 1000px;
+  /* Ensure content is vertically centered within the parent flex container */
+  vertical-align: middle;
+  line-height: 1;
 }
 
+/* Modern text segments */
+.scrolling-text-segment {
+  display: inline;
+  vertical-align: middle;
+  
+  /* Performance optimizations */
+  font-feature-settings: 'kern' 1;
+  text-rendering: optimizeSpeed;
+  
+  /* Smooth transitions for dynamic updates */
+  transition: color 0.3s ease;
+}
+
+/* Modern separators */
+.scrolling-separator {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.5em;
+  
+  /* Ensure separators don't interfere with performance */
+  transform: translateZ(0);
+}
+
+/* Crown SVG separator styling */
+.scrolling-separator img.sep {
+  width: 1.5em;
+  height: 1.5em;
+  vertical-align: middle;
+  
+  /* Optimize SVG rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Legacy support */
 .text-segment {
   display: inline;
   vertical-align: middle;
@@ -42,6 +145,8 @@
   background-size: contain;
 }
 
+/* === KEYFRAME ANIMATIONS === */
+
 /* Base keyframe template - actual keyframes generated dynamically */
 @keyframes scroll-footer-base {
   0% { 
@@ -52,13 +157,142 @@
   }
 }
 
-/* Performance optimization classes */
+/* Simplified animation for fallback scenarios */
+@keyframes simplified-scroll {
+  0% { 
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateX(-50%);
+    opacity: 1;
+  }
+}
+
+/* Fade transition for state changes */
+@keyframes footer-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes footer-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Error state animation */
+@keyframes footer-error-pulse {
+  0%, 100% {
+    background-color: #ffebee;
+  }
+  50% {
+    background-color: #ffcdd2;
+  }
+}
+
+/* Apply fade animations to transitions */
+.SignageFooter.footer-transitioning {
+  animation: footer-fade-in 0.3s ease-out;
+}
+
+.SignageFooter.footer-error {
+  animation: footer-error-pulse 2s ease-in-out infinite;
+}
+
+/* === STATE MANAGEMENT === */
+
+/* Visibility states */
+.SignageFooter.footer-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.SignageFooter.footer-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.SignageFooter.footer-transitioning {
+  opacity: 0.5;
+  visibility: visible;
+}
+
+.SignageFooter.footer-loading {
+  opacity: 0.3;
+  visibility: visible;
+}
+
+.SignageFooter.footer-error {
+  opacity: 0.8;
+  visibility: visible;
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* === PERFORMANCE OPTIMIZATIONS === */
+
+/* GPU acceleration classes */
+.SignageFooter.gpu-accelerated .scrolling-footer-content {
+  /* Enhanced GPU layer hints */
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+/* Legacy GPU acceleration */
 .scrolling-footer.gpu-accelerated .scroll-content {
   /* Additional GPU layer hints */
   transform: translate3d(0, 0, 0);
   -webkit-transform: translate3d(0, 0, 0);
 }
 
+/* === FALLBACK MODES === */
+
+/* Performance fallback */
+.SignageFooter.fallback-performance .scrolling-footer-content {
+  animation: none !important;
+  transform: none !important;
+  will-change: auto;
+}
+
+/* Error fallback */
+.SignageFooter.fallback-error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.SignageFooter.fallback-error .scrolling-footer-content {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Accessibility fallback */
+.SignageFooter.fallback-accessibility .scrolling-footer-content {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Static fallback */
+.SignageFooter.fallback-static .scrolling-footer-content {
+  animation: none !important;
+  transform: none !important;
+  overflow: visible;
+  white-space: normal;
+}
+
+/* Legacy fallback support */
 .scrolling-footer.fallback {
   /* Static fallback styles when animation fails */
   overflow: visible;
@@ -70,7 +304,54 @@
   transform: none;
 }
 
-/* Performance monitoring indicator (development only) */
+/* === DEBUG AND MONITORING === */
+
+/* Performance monitoring indicator */
+.SignageFooter.performance-debug::after {
+  content: "FPS: " attr(data-fps) " | GPU: " attr(data-gpu);
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  font-size: 11px;
+  font-family: monospace;
+  padding: 4px 8px;
+  border-radius: 0 0 0 4px;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Performance debug overlay */
+.performance-debug-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px;
+  font-size: 12px;
+  font-family: monospace;
+  z-index: 9999;
+  border-radius: 0 0 0 8px;
+  min-width: 120px;
+}
+
+/* Fallback debug message */
+.fallback-debug-message {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(255, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: monospace;
+  z-index: 1000;
+  border-radius: 0 0 0 4px;
+}
+
+/* Legacy debug support */
 .scrolling-footer.debug::after {
   content: "FPS: " attr(data-fps);
   position: absolute;
@@ -81,22 +362,70 @@
   pointer-events: none;
 }
 
-/* Media queries for different screen sizes */
+/* === RESPONSIVE DESIGN === */
+
+/* Standard HD displays */
 @media (max-width: 1920px) {
+  .scrolling-separator img.sep {
+    width: 1.4em;
+    height: 1.4em;
+  }
+  
+  /* Legacy support */
   .separator {
     width: 1.8em;
   }
 }
 
+/* Smaller displays */
 @media (max-width: 1280px) {
+  .SignageFooter {
+    --footer-font-size: 2.5vh;
+  }
+  
+  .scrolling-separator {
+    margin: 0 0.3em;
+  }
+  
+  .scrolling-separator img.sep {
+    width: 1.2em;
+    height: 1.2em;
+  }
+  
+  /* Legacy support */
   .separator {
     width: 1.5em;
     margin: 0 0.3em;
   }
 }
 
-/* Accessibility: Respect user's motion preferences */
+/* Ultra-wide displays */
+@media (min-width: 2560px) {
+  .SignageFooter {
+    --footer-font-size: 4vh;
+  }
+  
+  .scrolling-separator img.sep {
+    width: 1.8em;
+    height: 1.8em;
+  }
+}
+
+/* === ACCESSIBILITY === */
+
+/* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
+  .SignageFooter .scrolling-footer-content {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto;
+  }
+  
+  .SignageFooter {
+    overflow: visible;
+  }
+  
+  /* Legacy support */
   .scrolling-footer .scroll-content {
     animation: none;
     transform: none;
@@ -108,11 +437,79 @@
   }
 }
 
-/* High DPI display optimizations */
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .SignageFooter {
+    --footer-text-color: CanvasText;
+    --footer-bg-color: Canvas;
+    border: 1px solid CanvasText;
+  }
+}
+
+/* Focus management for keyboard navigation */
+.SignageFooter:focus-within {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* === HIGH DPI OPTIMIZATIONS === */
+
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .SignageFooter {
+    /* Optimize text rendering on high DPI displays */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .scrolling-separator img.sep {
+    /* Enhanced SVG rendering for high DPI */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+  
+  /* Legacy support */
   .separator {
     /* Use higher quality SVG rendering */
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+  }
+}
+
+/* === PERFORMANCE CLASSES === */
+
+/* Animation performance optimization */
+.SignageFooter .scrolling-footer-content.animated {
+  /* Ensure optimal performance during animation */
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Static content optimization */
+.SignageFooter .scrolling-footer-content:not(.animated) {
+  /* Optimize for static display */
+  will-change: auto;
+  transform: none;
+}
+
+/* === PRINT STYLES === */
+
+@media print {
+  .SignageFooter {
+    /* Optimize for print */
+    background: white !important;
+    color: black !important;
+    position: static !important;
+  }
+  
+  .scrolling-footer-content {
+    animation: none !important;
+    transform: none !important;
+    overflow: visible !important;
+    white-space: normal !important;
+  }
+  
+  .performance-debug-overlay,
+  .fallback-debug-message {
+    display: none !important;
   }
 }

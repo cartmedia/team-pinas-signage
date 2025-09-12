@@ -109,6 +109,24 @@ class ScrollingFooter {
         this.performanceObserver = null;
         
         /**
+         * Performance monitor instance for hardware acceleration and 60fps tracking
+         * @type {PerformanceMonitor|null}
+         */
+        this.performanceMonitor = null;
+        
+        /**
+         * Animation fallback manager for error recovery
+         * @type {AnimationFallbackManager|null}
+         */
+        this.fallbackManager = null;
+        
+        /**
+         * CSS performance tracker for loading metrics
+         * @type {CSSPerformanceTracker|null}
+         */
+        this.cssTracker = null;
+        
+        /**
          * Animation state data including dimensions and timing
          * @type {Object|null}
          */
@@ -153,13 +171,21 @@ class ScrollingFooter {
         // Apply base CSS class for the new architecture
         this.container.classList.add('SignageFooter');
         
+        // Initialize performance monitoring systems
+        this._initializePerformanceSystems();
+        
         // Initialize component
         this._initialize();
         
         console.log(`ScrollingFooter initialized with config:`, {
             text_length: config.footer_text.length,
             scroll_speed: config.scroll_speed,
-            direction: config.scroll_direction
+            direction: config.scroll_direction,
+            performanceSystems: {
+                monitor: !!this.performanceMonitor,
+                fallback: !!this.fallbackManager,
+                cssTracker: !!this.cssTracker
+            }
         });
     }
 
@@ -339,25 +365,27 @@ class ScrollingFooter {
     }
 
     /**
-     * Get current performance metrics including FPS, dropped frames, and GPU acceleration status
-     * @returns {Object} Performance data object
-     * @returns {number} returns.fps - Average frames per second (rounded to 2 decimals)
-     * @returns {number} returns.dropped_frames - Count of frames below 55 FPS threshold
-     * @returns {boolean} returns.gpu_accelerated - Whether GPU acceleration is active
-     * @returns {number} returns.animation_duration - Current animation duration in seconds
-     * @returns {boolean} returns.is_animating - Whether animation is currently running
+     * Get comprehensive performance metrics from all monitoring systems
+     * @returns {Object} Complete performance data
      */
     getPerformanceMetrics() {
-        const averageFPS = this.fpsHistory.length > 0 
-            ? this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length 
-            : 0;
-            
+        const legacyMetrics = this._getLegacyPerformanceMetrics();
+        const advancedMetrics = this.performanceMonitor ? this.performanceMonitor.getMetrics() : null;
+        const cssMetrics = this.cssTracker ? this.cssTracker.getMetrics() : null;
+        const fallbackStatus = this.fallbackManager ? this.fallbackManager.getStatus() : null;
+        
         return {
-            fps: Math.round(averageFPS * 100) / 100,
-            dropped_frames: this.fpsHistory.filter(fps => fps < 55).length,
-            gpu_accelerated: this._isGPUAccelerated(),
-            animation_duration: this.animationState?.duration || 0,
-            is_animating: this.isAnimating
+            legacy: legacyMetrics,
+            advanced: advancedMetrics,
+            css: cssMetrics,
+            fallback: fallbackStatus,
+            combined: {
+                fps: advancedMetrics?.fps || legacyMetrics.fps,
+                gpu_accelerated: advancedMetrics?.isGPUAccelerated || legacyMetrics.gpu_accelerated,
+                is_animating: this.isAnimating,
+                fallback_active: fallbackStatus?.fallbackActive || false,
+                performance_grade: this._calculatePerformanceGrade(advancedMetrics || legacyMetrics)
+            }
         };
     }
 
@@ -389,7 +417,7 @@ class ScrollingFooter {
             textColor: this.config.text_color || '#101010',
             bgColor: this.config.background_color || '#c19d6c',
             fontSize: this.config.font_size || '3vh',
-            scrollSpeed: `${scrollSpeed}px`
+            scrollSpeed: `${pixelsPerSecond}px`
         });
     }
 
@@ -640,8 +668,8 @@ class ScrollingFooter {
     }
 
     /**
-     * Clean up generated CSS keyframes by removing the injected style element
-     * Prevents memory leaks from accumulated keyframe definitions
+     * Clean up generated CSS keyframes and all performance monitoring resources
+     * Prevents memory leaks from accumulated keyframe definitions and monitoring systems
      * @private
      */
     _cleanupKeyframes() {
@@ -659,7 +687,20 @@ class ScrollingFooter {
         root.style.removeProperty('--footer-will-change');
         root.style.removeProperty('--footer-backface-visibility');
         
-        console.log('ScrollingFooter: Keyframes and CSS properties cleaned up');
+        // Cleanup performance monitoring systems
+        if (this.performanceMonitor) {
+            this.performanceMonitor.stop();
+        }
+        
+        if (this.fallbackManager) {
+            this.fallbackManager.cleanup();
+        }
+        
+        if (this.cssTracker) {
+            this.cssTracker.stopTracking();
+        }
+        
+        console.log('ScrollingFooter: Complete cleanup including performance systems');
     }
 
     /**
@@ -826,6 +867,245 @@ class ScrollingFooter {
         this.container.dispatchEvent(event);
         
         console.log(`ScrollingFooter: Event dispatched - ${eventName}:`, detail);
+    }
+    
+    /**
+     * Start comprehensive performance monitoring using all available systems
+     * @private
+     */
+    _startComprehensivePerformanceMonitoring() {
+        // Start advanced performance monitor
+        if (this.performanceMonitor) {
+            this.performanceMonitor.start().then(success => {
+                if (success) {
+                    console.log('ScrollingFooter: Advanced performance monitoring started');
+                    
+                    // Set up event listeners for performance warnings
+                    this.container.addEventListener('performance-monitoring-started', (event) => {
+                        console.log('ScrollingFooter: Performance monitoring active:', event.detail);
+                    });
+                    
+                    this.container.addEventListener('performance-performance-warning', (event) => {
+                        console.warn('ScrollingFooter: Performance warning:', event.detail);
+                        
+                        // Consider activating fallback on repeated warnings
+                        if (event.detail.type === 'low-fps' && this.fallbackManager) {
+                            this.fallbackManager.activateFallback('performance', event.detail);
+                        }
+                    });
+                    
+                    this.container.addEventListener('performance-gpu-acceleration-checked', (event) => {
+                        console.log('ScrollingFooter: GPU acceleration status:', event.detail);
+                        
+                        if (!event.detail.detected && event.detail.fallbackApplied) {
+                            console.log('ScrollingFooter: GPU acceleration fallback applied automatically');
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Start legacy performance monitoring as backup
+        this._startPerformanceMonitoring();
+    }
+    
+    /**
+     * Stop comprehensive performance monitoring
+     * @private
+     */
+    _stopComprehensivePerformanceMonitoring() {
+        // Stop advanced performance monitor
+        if (this.performanceMonitor) {
+            const finalMetrics = this.performanceMonitor.getMetrics();
+            this.performanceMonitor.stop();
+            
+            console.log('ScrollingFooter: Final performance metrics:', finalMetrics);
+            
+            // Dispatch final performance report
+            this._dispatchEvent('final-performance-report', finalMetrics);
+        }
+        
+        // Stop CSS performance tracking
+        if (this.cssTracker) {
+            const cssMetrics = this.cssTracker.stopTracking();
+            console.log('ScrollingFooter: CSS performance metrics:', cssMetrics);
+            
+            // Dispatch CSS performance report
+            this._dispatchEvent('css-performance-report', cssMetrics);
+        }
+    }
+    
+    /**
+     * Render fallback footer when animation fails
+     * @private
+     * @param {HTMLElement} element - Container element
+     * @param {Object} data - Error/fallback data
+     */
+    _renderFallbackFooter(element, data) {
+        console.log('ScrollingFooter: Rendering fallback footer', data);
+        
+        // Clear existing content
+        element.innerHTML = '';
+        
+        // Create fallback content wrapper
+        const fallbackWrapper = document.createElement('div');
+        fallbackWrapper.className = 'scrolling-footer-fallback';
+        
+        // Add fallback message if in debug mode
+        if (localStorage.getItem('debugMode') === 'true') {
+            const debugMessage = document.createElement('div');
+            debugMessage.className = 'fallback-debug-message';
+            debugMessage.textContent = `Fallback Active: ${data.reason || 'Unknown'}`;
+            debugMessage.style.cssText = `
+                position: absolute;
+                top: 0;
+                right: 0;
+                background: rgba(255, 0, 0, 0.8);
+                color: white;
+                padding: 4px 8px;
+                font-size: 12px;
+                z-index: 1000;
+            `;
+            fallbackWrapper.appendChild(debugMessage);
+        }
+        
+        // Create static content
+        const staticContent = document.createElement('div');
+        staticContent.className = 'scrolling-footer-content fallback-static';
+        
+        // Add text segments with separators
+        for (let i = 0; i < this.textSegments.length; i++) {
+            const textSpan = document.createElement('span');
+            textSpan.className = 'scrolling-text-segment';
+            textSpan.textContent = this.textSegments[i];
+            staticContent.appendChild(textSpan);
+            
+            // Add separator (except after last segment)
+            if (i < this.textSegments.length - 1) {
+                const separatorSpan = document.createElement('span');
+                separatorSpan.className = 'scrolling-separator';
+                separatorSpan.setAttribute('aria-hidden', 'true');
+                separatorSpan.innerHTML = this.config.separator_text || ' 👑 ';
+                staticContent.appendChild(separatorSpan);
+            }
+        }
+        
+        fallbackWrapper.appendChild(staticContent);
+        element.appendChild(fallbackWrapper);
+        
+        // Apply visibility state
+        this._setVisibilityState('visible');
+        
+        // Dispatch fallback event
+        this._dispatchEvent('fallback-rendered', {
+            reason: data.reason,
+            segmentCount: this.textSegments.length
+        });
+    }
+    
+    /**
+     * Get legacy performance metrics for backward compatibility
+     * @private
+     * @returns {Object} Legacy performance metrics
+     */
+    _getLegacyPerformanceMetrics() {
+        const averageFPS = this.fpsHistory.length > 0 
+            ? this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length 
+            : 0;
+            
+        return {
+            fps: Math.round(averageFPS * 100) / 100,
+            dropped_frames: this.fpsHistory.filter(fps => fps < 55).length,
+            gpu_accelerated: this._isGPUAccelerated(),
+            animation_duration: this.animationState?.duration || 0,
+            is_animating: this.isAnimating
+        };
+    }
+    
+    /**
+     * Calculate overall performance grade
+     * @private
+     * @param {Object} metrics - Performance metrics
+     * @returns {string} Performance grade A-F
+     */
+    _calculatePerformanceGrade(metrics) {
+        if (!metrics || !metrics.fps) return 'F';
+        
+        const fps = metrics.fps;
+        const smoothness = metrics.smoothness || 0;
+        const gpuAccelerated = metrics.isGPUAccelerated || metrics.gpu_accelerated || false;
+        
+        let score = 0;
+        
+        // FPS scoring (40% weight)
+        if (fps >= 58) score += 40;
+        else if (fps >= 50) score += 30;
+        else if (fps >= 40) score += 20;
+        else if (fps >= 30) score += 10;
+        
+        // Smoothness scoring (30% weight)
+        score += (smoothness / 100) * 30;
+        
+        // GPU acceleration bonus (20% weight)
+        if (gpuAccelerated) score += 20;
+        
+        // Stability bonus (10% weight)
+        if (metrics.droppedFrames !== undefined) {
+            const stability = Math.max(0, 100 - (metrics.droppedFrames * 2));
+            score += (stability / 100) * 10;
+        } else {
+            score += 10; // Assume stable if no data
+        }
+        
+        if (score >= 90) return 'A';
+        if (score >= 80) return 'B';
+        if (score >= 70) return 'C';
+        if (score >= 60) return 'D';
+        return 'F';
+    }
+    
+    /**
+     * Run performance benchmark test
+     * @param {number} duration - Test duration in milliseconds (default: 10000)
+     * @returns {Promise<Object>} Benchmark results
+     */
+    async runPerformanceBenchmark(duration = 10000) {
+        console.log(`ScrollingFooter: Running performance benchmark for ${duration}ms...`);
+        
+        if (this.performanceMonitor) {
+            return await this.performanceMonitor.runBenchmark(duration);
+        } else {
+            console.warn('ScrollingFooter: Advanced performance monitoring not available for benchmarking');
+            
+            // Run basic benchmark
+            return await this._runBasicBenchmark(duration);
+        }
+    }
+    
+    /**
+     * Run basic benchmark without advanced monitoring
+     * @private
+     * @param {number} duration - Test duration in milliseconds
+     * @returns {Promise<Object>} Basic benchmark results
+     */
+    async _runBasicBenchmark(duration) {
+        const startTime = performance.now();
+        const initialMetrics = this._getLegacyPerformanceMetrics();
+        
+        // Wait for benchmark duration
+        await new Promise(resolve => setTimeout(resolve, duration));
+        
+        const endTime = performance.now();
+        const finalMetrics = this._getLegacyPerformanceMetrics();
+        
+        return {
+            duration: endTime - startTime,
+            initialMetrics,
+            finalMetrics,
+            averageFPS: finalMetrics.fps,
+            performance: finalMetrics.fps >= 50 ? 'good' : 'poor',
+            type: 'basic'
+        };
     }
 }
 
