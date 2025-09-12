@@ -108,12 +108,20 @@ class AdminInterface {
       this.loadFooterConfig();
     });
 
-    // Footer preview handlers
-    const footerInputs = ['footerText', 'footerTextColor', 'footerFontSize'];
+    // Footer items management
+    safeAddEventListener('addFooterItem', 'click', () => {
+      this.addFooterItem();
+    });
+
+    // Footer preview handlers - updated for new interface
+    const footerInputs = ['footerTextColor', 'footerBackgroundColor', 'footerFontSize', 'footerDividerImage', 'footerScrollSpeed', 'footerScrollDirection'];
     footerInputs.forEach(inputId => {
       const input = document.getElementById(inputId);
       if (input) {
         input.addEventListener('input', () => {
+          this.updateFooterPreview();
+        });
+        input.addEventListener('change', () => {
           this.updateFooterPreview();
         });
       }
@@ -967,7 +975,6 @@ class AdminInterface {
 
   populateFooterForm(footerData) {
     // Populate footer form fields
-    const footerTextEl = document.getElementById('footerText');
     const textColorEl = document.getElementById('footerTextColor');
     const backgroundColorEl = document.getElementById('footerBackgroundColor');
     const scrollSpeedEl = document.getElementById('footerScrollSpeed');
@@ -975,48 +982,50 @@ class AdminInterface {
     const dividerImageEl = document.getElementById('footerDividerImage');
     const fontSizeEl = document.getElementById('footerFontSize');
 
-    if (footerTextEl) footerTextEl.value = footerData.footer_text || '';
-    if (textColorEl) textColorEl.value = footerData.text_color || '#101010';
-    if (backgroundColorEl) backgroundColorEl.value = footerData.background_color || '';
+    // Populate the footer items using the new interface
+    this.populateFooterItems(footerData.footer_text || '');
+    
+    if (textColorEl) textColorEl.value = footerData.text_color || '#FF0000';
+    if (backgroundColorEl) backgroundColorEl.value = footerData.background_color || '#FFFFFF';
     if (scrollSpeedEl) scrollSpeedEl.value = footerData.scroll_speed || 30;
-    if (scrollDirectionEl) scrollDirectionEl.value = footerData.scroll_direction || 'left';
+    if (scrollDirectionEl) scrollDirectionEl.value = footerData.scroll_direction || 'continuous';
     if (dividerImageEl) dividerImageEl.value = footerData.divider_image || 'assets/images/pinas_kroon.svg';
-    if (fontSizeEl) fontSizeEl.value = footerData.font_size || '3vh';
+    if (fontSizeEl) fontSizeEl.value = footerData.font_size || '4vh';
 
     // Update preview if available
     this.updateFooterPreview();
   }
 
   clearFooterForm() {
-    // Clear all footer form fields
-    const formFields = [
-      'footerText', 'footerTextColor', 'footerBackgroundColor', 
-      'footerScrollSpeed', 'footerScrollDirection', 'footerDividerImage', 'footerFontSize'
-    ];
+    // Clear footer items
+    const container = document.getElementById('footerItemsContainer');
+    if (container) {
+      container.innerHTML = '';
+    }
     
-    formFields.forEach(fieldId => {
-      const field = document.getElementById(fieldId);
-      if (field) field.value = '';
-    });
-
-    // Set defaults
+    // Reset to defaults and add one empty item
+    this.addFooterItem();
+    
+    // Clear other footer form fields
     const textColorEl = document.getElementById('footerTextColor');
+    const backgroundColorEl = document.getElementById('footerBackgroundColor');
     const scrollSpeedEl = document.getElementById('footerScrollSpeed');
     const scrollDirectionEl = document.getElementById('footerScrollDirection');
     const dividerImageEl = document.getElementById('footerDividerImage');
     const fontSizeEl = document.getElementById('footerFontSize');
-
-    if (textColorEl) textColorEl.value = '#101010';
+    
+    if (textColorEl) textColorEl.value = '#FF0000';
+    if (backgroundColorEl) backgroundColorEl.value = '#FFFFFF';
     if (scrollSpeedEl) scrollSpeedEl.value = '30';
-    if (scrollDirectionEl) scrollDirectionEl.value = 'left';
+    if (scrollDirectionEl) scrollDirectionEl.value = 'continuous';
     if (dividerImageEl) dividerImageEl.value = 'assets/images/pinas_kroon.svg';
-    if (fontSizeEl) fontSizeEl.value = '3vh';
+    if (fontSizeEl) fontSizeEl.value = '4vh';
   }
 
   async saveFooterConfig() {
     try {
-      // Get form values
-      const footerText = document.getElementById('footerText')?.value?.trim();
+      // Collect footer items from the dynamic interface
+      const footerItems = this.collectFooterItems();
       const textColor = document.getElementById('footerTextColor')?.value;
       const backgroundColor = document.getElementById('footerBackgroundColor')?.value;
       const scrollSpeed = document.getElementById('footerScrollSpeed')?.value;
@@ -1025,19 +1034,22 @@ class AdminInterface {
       const fontSize = document.getElementById('footerFontSize')?.value;
 
       // Validate required fields
-      if (!footerText) {
-        this.showToast('Footer tekst is verplicht', 'error');
+      if (footerItems.length === 0) {
+        this.showToast('Voeg minimaal één footer item toe', 'error');
         return;
       }
 
+      // Combine footer items with <separator> tags
+      const footerText = footerItems.join('<separator>');
+
       const footerData = {
         footer_text: footerText,
-        text_color: textColor || '#101010',
-        background_color: backgroundColor || null,
+        text_color: textColor || '#FF0000',
+        background_color: backgroundColor || '#FFFFFF',
         scroll_speed: parseInt(scrollSpeed) || 30,
-        scroll_direction: scrollDirection || 'left',
+        scroll_direction: scrollDirection || 'continuous',
         divider_image: dividerImage || 'assets/images/pinas_kroon.svg',
-        font_size: fontSize || '3vh'
+        font_size: fontSize || '4vh'
       };
 
       console.log('Saving footer configuration:', footerData);
@@ -1073,20 +1085,187 @@ class AdminInterface {
     }
   }
 
+  // Footer Items Management Functions
+  collectFooterItems() {
+    const container = document.getElementById('footerItemsContainer');
+    if (!container) return [];
+    
+    const inputs = container.querySelectorAll('input.footer-item-text');
+    return Array.from(inputs)
+      .map(input => input.value.trim())
+      .filter(text => text.length > 0);
+  }
+
+  addFooterItem(text = '') {
+    const container = document.getElementById('footerItemsContainer');
+    const emptyState = document.getElementById('footerItemsEmpty');
+    
+    if (!container) return;
+
+    // Hide empty state when adding items
+    if (emptyState) emptyState.classList.add('hidden');
+
+    const itemIndex = Date.now(); // Simple unique ID
+    const itemHtml = `
+      <div class="footer-item flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800" data-item-id="${itemIndex}">
+        <div class="flex-shrink-0 text-gray-400">
+          <i class="fas fa-grip-vertical cursor-move"></i>
+        </div>
+        <input type="text" class="footer-item-text flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+               placeholder="Footer tekst..." value="${text}">
+        <button type="button" class="remove-footer-item flex-shrink-0 text-red-500 hover:text-red-700 p-2">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', itemHtml);
+    
+    // Add event listener to remove button
+    const newItem = container.lastElementChild;
+    const removeBtn = newItem.querySelector('.remove-footer-item');
+    removeBtn.addEventListener('click', () => this.removeFooterItem(itemIndex));
+    
+    // Add event listeners to input for real-time preview updates
+    const newInput = newItem.querySelector('.footer-item-text');
+    newInput.addEventListener('input', () => this.updateFooterPreview());
+    newInput.addEventListener('blur', () => this.updateFooterPreview());
+    newInput.focus();
+    
+    this.updateEmptyState();
+    
+    // Update preview immediately
+    this.updateFooterPreview();
+  }
+
+  removeFooterItem(itemId) {
+    const item = document.querySelector(`[data-item-id="${itemId}"]`);
+    if (item) {
+      item.remove();
+      this.updateEmptyState();
+      // Update preview after removing item
+      this.updateFooterPreview();
+    }
+  }
+
+  updateEmptyState() {
+    const container = document.getElementById('footerItemsContainer');
+    const emptyState = document.getElementById('footerItemsEmpty');
+    
+    if (!container || !emptyState) return;
+    
+    const hasItems = container.children.length > 0;
+    
+    if (hasItems) {
+      emptyState.classList.add('hidden');
+    } else {
+      emptyState.classList.remove('hidden');
+    }
+  }
+
+  populateFooterItems(footerText) {
+    const container = document.getElementById('footerItemsContainer');
+    if (!container) return;
+    
+    // Clear existing items
+    container.innerHTML = '';
+    
+    if (footerText && footerText.trim()) {
+      // Split by <separator> and create items
+      const items = footerText.split('<separator>').map(item => item.trim()).filter(item => item.length > 0);
+      
+      if (items.length > 0) {
+        items.forEach(item => this.addFooterItem(item));
+      } else {
+        // If no valid items, add one default item
+        this.addFooterItem();
+      }
+    } else {
+      // Add one default item if no footer text
+      this.addFooterItem();
+    }
+    
+    this.updateEmptyState();
+    
+    // Update preview after populating items
+    this.updateFooterPreview();
+  }
+
   updateFooterPreview() {
-    // Simple preview update - could be enhanced
     const previewEl = document.getElementById('footerPreview');
     if (!previewEl) return;
 
-    const footerText = document.getElementById('footerText')?.value || '';
-    const textColor = document.getElementById('footerTextColor')?.value || '#101010';
-    const fontSize = document.getElementById('footerFontSize')?.value || '3vh';
+    // Get all footer items from the new interface
+    const footerItems = this.collectFooterItems();
+    const textColor = document.getElementById('footerTextColor')?.value || '#000000';
+    const backgroundColor = document.getElementById('footerBackgroundColor')?.value || '#FFFFFF';
+    const fontSize = document.getElementById('footerFontSize')?.value || '4vh';
+    const dividerImage = document.getElementById('footerDividerImage')?.value || 'assets/images/pinas_kroon.svg';
+
+    // Calculate contrast for readability
+    const contrastColor = this.getContrastingColor(backgroundColor);
+
+    if (footerItems.length === 0) {
+      previewEl.innerHTML = `
+        <div style="background: ${backgroundColor}; color: ${contrastColor}; padding: 16px; border-radius: 6px; text-align: center; border: 2px dashed #ccc;">
+          <i class="fas fa-text-width text-2xl mb-2 opacity-50"></i>
+          <p class="text-sm opacity-70">Geen footer items - voeg items toe om preview te zien</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Create preview with separator icons
+    let previewContent = '';
+    footerItems.forEach((item, index) => {
+      previewContent += `<span style="color: ${textColor};">${item}</span>`;
+      if (index < footerItems.length - 1) {
+        // Add separator icon between items
+        previewContent += `<img src="${dividerImage}" alt="separator" style="height: 1em; width: auto; margin: 0 8px; vertical-align: middle; opacity: 0.8;" />`;
+      }
+    });
 
     previewEl.innerHTML = `
-      <div style="color: ${textColor}; font-size: ${fontSize}; padding: 10px; background: #f5f5f5; border-radius: 4px; overflow: hidden; white-space: nowrap;">
-        ${footerText.replace('<separator>', ' | ')}
+      <div style="
+        background: ${backgroundColor}; 
+        color: ${textColor}; 
+        font-size: calc(${fontSize} * 0.5); 
+        padding: 16px; 
+        border-radius: 6px; 
+        overflow: hidden; 
+        white-space: nowrap; 
+        text-align: center;
+        border: 1px solid rgba(0,0,0,0.1);
+        position: relative;
+      ">
+        <div style="display: inline-block; animation: scroll 20s linear infinite;">
+          ${previewContent}
+        </div>
+        <div style="position: absolute; top: 4px; right: 8px; font-size: 10px; opacity: 0.5; color: ${contrastColor};">
+          Preview
+        </div>
       </div>
+      <style>
+        @keyframes scroll {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+      </style>
     `;
+  }
+
+  // Helper function to get contrasting color for readability
+  getContrastingColor(hexColor) {
+    // Convert hex to RGB
+    const r = parseInt(hexColor.substr(1, 2), 16);
+    const g = parseInt(hexColor.substr(3, 2), 16);
+    const b = parseInt(hexColor.substr(5, 2), 16);
+    
+    // Calculate relative luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return black for light backgrounds, white for dark backgrounds
+    return luminance > 0.5 ? '#000000' : '#FFFFFF';
   }
 
   /**

@@ -200,23 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
     slot3: document.querySelector(".CategorySlot[data-slot='3']")
   };
   
-  // Load display settings for rotation timing
-  const loadDisplaySettings = async () => {
-    try {
-      const response = await fetch('/.netlify/functions/settings');
-      const data = await response.json();
-      const settings = data.settings || {};
-      
-      ROTATE_INTERVAL_MS = parseInt(settings.rotation_interval) || 6000;
-      console.log(`⚡ Rotation interval: ${ROTATE_INTERVAL_MS}ms`);
-    } catch (error) {
-      console.log('ℹ️ Using default rotation interval (6s)');
-      ROTATE_INTERVAL_MS = 6000;
-    }
-  };
-  
-  // Load settings in background - don't block menu
-  loadDisplaySettings();
+  // Rotation interval will be loaded via loadAllData() for better performance
   
   console.log('🚀 Menu rendering starts immediately');
 
@@ -321,6 +305,11 @@ document.addEventListener("DOMContentLoaded", function () {
   function applySettings(settingsData) {
     if (displaySettings && settingsData) {
       displaySettings.applySettings(settingsData);
+      
+      // Update rotation interval from settings
+      const settings = settingsData.settings || {};
+      ROTATE_INTERVAL_MS = parseInt(settings.rotation_interval) || 6000;
+      console.log(`⚡ Rotation interval updated: ${ROTATE_INTERVAL_MS}ms`);
     }
   }
 
@@ -330,7 +319,7 @@ document.addEventListener("DOMContentLoaded", function () {
       
       // Map footer API response to display properties
       footerSpeed = parseInt(footerData.scroll_speed) || 30;
-      footerText = footerData.footer_text.trim().replace('<separator>', '||');
+      footerText = footerData.footer_text.trim().replace(/<separator>/g, '||');
       footerContinuous = footerData.scroll_direction !== 'static';
       
       // Apply footer text color if provided
@@ -753,7 +742,7 @@ document.addEventListener("DOMContentLoaded", function () {
         
         // Map footer API response to display properties
         footerSpeed = parseInt(footerData.scroll_speed) || 30;
-        footerText = footerData.footer_text.trim().replace('<separator>', '||'); // Convert separator format
+        footerText = footerData.footer_text.trim().replace(/<separator>/g, '||'); // Convert all separator tags
         footerContinuous = footerData.scroll_direction !== 'static';
         
         // Apply footer text color if provided
