@@ -1186,7 +1186,6 @@ class AdminInterface {
     const textColor = document.getElementById('footerTextColor')?.value || '#000000';
     const backgroundColor = document.getElementById('footerBackgroundColor')?.value || '#FFFFFF';
     const fontSize = document.getElementById('footerFontSize')?.value || '4vh';
-    const dividerImage = document.getElementById('footerDividerImage')?.value || 'assets/images/pinas_kroon.svg';
 
     // Calculate contrast for readability
     const contrastColor = this.getContrastingColor(backgroundColor);
@@ -1206,8 +1205,23 @@ class AdminInterface {
     footerItems.forEach((item, index) => {
       previewContent += `<span style="color: ${textColor};">${item}</span>`;
       if (index < footerItems.length - 1) {
-        // Add separator icon between items
-        previewContent += `<img src="${dividerImage}" alt="separator" style="height: 1em; width: auto; margin: 0 8px; vertical-align: middle; opacity: 0.8;" />`;
+        // Add emoji separator between items (using enhanced separator types)
+        const separatorType = document.getElementById('footerSeparatorType')?.value || 'crown';
+        let separatorContent = ' 👑 '; // default crown emoji
+        
+        switch (separatorType) {
+          case 'crown': separatorContent = ' 👑 '; break;
+          case 'star': separatorContent = ' ⭐ '; break;
+          case 'dot': separatorContent = ' • '; break;
+          case 'dash': separatorContent = ' — '; break;
+          case 'space': separatorContent = '   '; break;
+          case 'custom': 
+            const customSep = document.getElementById('footerCustomSeparator')?.value || '|';
+            separatorContent = ` ${customSep} `;
+            break;
+        }
+        
+        previewContent += `<span style="color: ${textColor}; margin: 0 0.5em;">${separatorContent}</span>`;
       }
     });
 
@@ -3008,7 +3022,7 @@ class AdminInterface {
     const opacityEl = document.getElementById('footerOpacity');
     const opacityValueEl = document.getElementById('footerOpacityValue');
     if (opacityEl && opacityValueEl) {
-      const opacity = footerData.opacity !== undefined ? footerData.opacity : 1.0;
+      const opacity = (footerData.opacity !== undefined && footerData.opacity !== null && typeof footerData.opacity === 'number') ? footerData.opacity : 1.0;
       opacityEl.value = opacity;
       opacityValueEl.textContent = opacity.toFixed(1);
     }

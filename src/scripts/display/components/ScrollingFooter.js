@@ -205,6 +205,61 @@ class ScrollingFooter {
     }
 
     /**
+     * Initialize performance monitoring systems
+     * Sets up PerformanceMonitor, AnimationFallbackManager, and CSSPerformanceTracker instances
+     * @private
+     */
+    _initializePerformanceSystems() {
+        console.log('ScrollingFooter: Initializing performance monitoring systems');
+        
+        try {
+            // Initialize PerformanceMonitor if available
+            if (typeof PerformanceMonitor !== 'undefined') {
+                this.performanceMonitor = new PerformanceMonitor(this.container, {
+                    targetFPS: 60,
+                    alertThreshold: 50,
+                    monitorGPU: true,
+                    autoFallback: true
+                });
+                console.log('ScrollingFooter: PerformanceMonitor initialized');
+            } else {
+                console.log('ScrollingFooter: PerformanceMonitor not available, using legacy monitoring');
+            }
+            
+            // Initialize AnimationFallbackManager if available
+            if (typeof AnimationFallbackManager !== 'undefined') {
+                this.fallbackManager = new AnimationFallbackManager(this.container, {
+                    fallbackRenderer: this._renderFallbackFooter.bind(this),
+                    performanceThreshold: 45,
+                    errorThreshold: 3
+                });
+                console.log('ScrollingFooter: AnimationFallbackManager initialized');
+            } else {
+                console.log('ScrollingFooter: AnimationFallbackManager not available');
+            }
+            
+            // Initialize CSSPerformanceTracker if available
+            if (typeof CSSPerformanceTracker !== 'undefined') {
+                this.cssTracker = new CSSPerformanceTracker({
+                    trackAnimations: true,
+                    trackRender: true,
+                    trackLayout: true
+                });
+                console.log('ScrollingFooter: CSSPerformanceTracker initialized');
+            } else {
+                console.log('ScrollingFooter: CSSPerformanceTracker not available');
+            }
+            
+        } catch (error) {
+            console.warn('ScrollingFooter: Error initializing performance systems:', error);
+            // Continue without advanced monitoring - fallback to legacy systems
+            this.performanceMonitor = null;
+            this.fallbackManager = null;
+            this.cssTracker = null;
+        }
+    }
+
+    /**
      * Initialize component with configuration, apply styles using CSS custom properties, parse text, and check accessibility preferences
      * @private
      */
@@ -588,7 +643,8 @@ class ScrollingFooter {
         root.style.setProperty('--footer-font-size', this.config.font_size || '3vh');
         
         // Enhanced styling properties
-        root.style.setProperty('--footer-opacity', this.config.opacity !== undefined ? this.config.opacity : 1.0);
+        const opacity = this.config.opacity !== undefined && typeof this.config.opacity === 'number' ? this.config.opacity : 1.0;
+        root.style.setProperty('--footer-opacity', opacity);
         root.style.setProperty('--footer-text-shadow', this.config.text_shadow || 'none');
         root.style.setProperty('--footer-border-radius', this.config.border_radius || '0');
         root.style.setProperty('--footer-animation-timing', this.config.animation_timing || 'linear');
