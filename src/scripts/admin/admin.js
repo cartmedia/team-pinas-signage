@@ -986,12 +986,15 @@ class AdminInterface {
     // Populate the footer items using the new interface
     this.populateFooterItems(footerData.footer_text || '');
     
-    if (textColorEl) textColorEl.value = footerData.text_color || '#FF0000';
-    if (backgroundColorEl) backgroundColorEl.value = footerData.background_color || '#FFFFFF';
+    if (textColorEl) textColorEl.value = footerData.text_color || '#1a1a1a';
+    if (backgroundColorEl) backgroundColorEl.value = footerData.background_color || '#c19d6c';
     if (scrollSpeedEl) scrollSpeedEl.value = footerData.scroll_speed || 30;
     if (scrollDirectionEl) scrollDirectionEl.value = footerData.scroll_direction || 'continuous';
     if (dividerImageEl) dividerImageEl.value = footerData.divider_image || 'assets/images/pinas_kroon.svg';
     if (fontSizeEl) fontSizeEl.value = footerData.font_size || '4vh';
+
+    // Populate enhanced configuration fields
+    this.populateEnhancedFooterFields(footerData);
 
     // Update preview if available
     this.updateFooterPreview();
@@ -1025,33 +1028,15 @@ class AdminInterface {
 
   async saveFooterConfig() {
     try {
-      // Collect footer items from the dynamic interface
-      const footerItems = this.collectFooterItems();
-      const textColor = document.getElementById('footerTextColor')?.value;
-      const backgroundColor = document.getElementById('footerBackgroundColor')?.value;
-      const scrollSpeed = document.getElementById('footerScrollSpeed')?.value;
-      const scrollDirection = document.getElementById('footerScrollDirection')?.value;
-      const dividerImage = document.getElementById('footerDividerImage')?.value;
-      const fontSize = document.getElementById('footerFontSize')?.value;
+      // Collect enhanced footer configuration
+      const footerData = this.collectEnhancedFooterConfig();
 
       // Validate required fields
+      const footerItems = this.collectFooterItems();
       if (footerItems.length === 0) {
         this.showToast('Voeg minimaal één footer item toe', 'error');
         return;
       }
-
-      // Combine footer items with <separator> tags
-      const footerText = footerItems.join('<separator>');
-
-      const footerData = {
-        footer_text: footerText,
-        text_color: textColor || '#FF0000',
-        background_color: backgroundColor || '#FFFFFF',
-        scroll_speed: parseInt(scrollSpeed) || 30,
-        scroll_direction: scrollDirection || 'continuous',
-        divider_image: dividerImage || 'assets/images/pinas_kroon.svg',
-        font_size: fontSize || '4vh'
-      };
 
       console.log('Saving footer configuration:', footerData);
 
@@ -2800,6 +2785,245 @@ class AdminInterface {
   renderProducts() {
     // Initialize with all products
     this.filterAndRenderProducts();
+  }
+
+  /**
+   * Initialize enhanced footer configuration inputs
+   * Sets up event handlers for all new enhanced footer options
+   */
+  initEnhancedFooterInputs() {
+    console.log('Initializing enhanced footer inputs...');
+    
+    // Opacity slider handling
+    const opacitySlider = document.getElementById('footerOpacity');
+    const opacityValue = document.getElementById('footerOpacityValue');
+    
+    if (opacitySlider && opacityValue) {
+      const updateOpacityValue = () => {
+        const value = parseFloat(opacitySlider.value);
+        opacityValue.textContent = value.toFixed(1);
+        this.updateFooterPreview();
+      };
+      
+      opacitySlider.addEventListener('input', updateOpacityValue);
+      opacitySlider.addEventListener('change', updateOpacityValue);
+    }
+    
+    // Custom separator handling
+    const separatorTypeSelect = document.getElementById('footerSeparatorType');
+    const customSeparatorInput = document.getElementById('footerCustomSeparator');
+    
+    if (separatorTypeSelect && customSeparatorInput) {
+      const toggleCustomSeparator = () => {
+        const isCustom = separatorTypeSelect.value === 'custom';
+        customSeparatorInput.style.display = isCustom ? 'block' : 'none';
+        this.updateFooterPreview();
+      };
+      
+      separatorTypeSelect.addEventListener('change', toggleCustomSeparator);
+      customSeparatorInput.addEventListener('input', () => this.updateFooterPreview());
+      
+      // Initial state
+      toggleCustomSeparator();
+    }
+    
+    // Setup event listeners for all enhanced inputs
+    const enhancedInputs = [
+      'footerSeparatorSpacing',
+      'footerSeparatorColor',
+      'footerAnimationTiming',
+      'footerPauseOnHover',
+      'footerReverseOnComplete',
+      'footerTextShadow',
+      'footerBorderRadius'
+    ];
+    
+    enhancedInputs.forEach(inputId => {
+      const input = document.getElementById(inputId);
+      if (input) {
+        const eventType = input.type === 'checkbox' ? 'change' : 'input';
+        input.addEventListener(eventType, () => {
+          console.log(`Enhanced input changed: ${inputId} = ${input.value || input.checked}`);
+          this.updateFooterPreview();
+        });
+      }
+    });
+    
+    // Footer preview initialization
+    this.initFooterPreview();
+    
+    console.log('Enhanced footer inputs initialized successfully');
+  }
+  
+  /**
+   * Initialize the footer preview component
+   */
+  initFooterPreview() {
+    const previewContainer = document.getElementById('footerPreviewContainer');
+    if (!previewContainer) {
+      console.warn('Footer preview container not found');
+      return;
+    }
+    
+    try {
+      // Check if FooterPreview component is available
+      if (typeof FooterPreview !== 'undefined') {
+        this.footerPreview = new FooterPreview(previewContainer, {
+          apiEndpoint: '/.netlify/functions/footer-preview',
+          onError: (error) => {
+            console.error('Footer preview error:', error);
+            this.showToast('Footer preview fout: ' + error.message, 'error');
+          },
+          enableLiveUpdate: true,
+          debounceDelay: 500
+        });
+        
+        console.log('Footer preview component initialized');
+      } else {
+        console.warn('FooterPreview component not available');
+      }
+    } catch (error) {
+      console.error('Error initializing footer preview:', error);
+    }
+  }
+  
+  /**
+   * Update footer preview with current configuration
+   */
+  updateFooterPreview() {
+    if (!this.footerPreview) return;
+    
+    try {
+      const config = this.collectEnhancedFooterConfig();
+      this.footerPreview.updateConfiguration(config);
+    } catch (error) {
+      console.error('Error updating footer preview:', error);
+    }
+  }
+  
+  /**
+   * Collect enhanced footer configuration from all inputs
+   * @returns {Object} Complete footer configuration object
+   */
+  collectEnhancedFooterConfig() {
+    // Collect footer items
+    const footerItems = this.collectFooterItems();
+    const footerText = footerItems.join('<separator>');
+    
+    // Basic configuration
+    const config = {
+      footer_text: footerText,
+      text_color: document.getElementById('footerTextColor')?.value || '#1a1a1a',
+      background_color: document.getElementById('footerBackgroundColor')?.value || '#c19d6c',
+      scroll_speed: parseInt(document.getElementById('footerScrollSpeed')?.value) || 30,
+      scroll_direction: document.getElementById('footerScrollDirection')?.value || 'continuous',
+      font_size: document.getElementById('footerFontSize')?.value || '4vh',
+      divider_image: document.getElementById('footerDividerImage')?.value || 'assets/images/pinas_kroon.svg'
+    };
+    
+    // Enhanced configuration
+    const separatorType = document.getElementById('footerSeparatorType')?.value || 'crown';
+    config.separator_type = separatorType;
+    
+    if (separatorType === 'custom') {
+      config.custom_separator = document.getElementById('footerCustomSeparator')?.value || '|';
+    }
+    
+    // Additional enhanced fields
+    const opacityEl = document.getElementById('footerOpacity');
+    if (opacityEl) config.opacity = parseFloat(opacityEl.value);
+    
+    const separatorSpacingEl = document.getElementById('footerSeparatorSpacing');
+    if (separatorSpacingEl && separatorSpacingEl.value) config.separator_spacing = separatorSpacingEl.value;
+    
+    const separatorColorEl = document.getElementById('footerSeparatorColor');
+    if (separatorColorEl && separatorColorEl.value) config.separator_color = separatorColorEl.value;
+    
+    const animationTimingEl = document.getElementById('footerAnimationTiming');
+    if (animationTimingEl) config.animation_timing = animationTimingEl.value;
+    
+    const pauseOnHoverEl = document.getElementById('footerPauseOnHover');
+    if (pauseOnHoverEl) config.pause_on_hover = pauseOnHoverEl.checked;
+    
+    const reverseOnCompleteEl = document.getElementById('footerReverseOnComplete');
+    if (reverseOnCompleteEl) config.reverse_on_complete = reverseOnCompleteEl.checked;
+    
+    const textShadowEl = document.getElementById('footerTextShadow');
+    if (textShadowEl && textShadowEl.value) config.text_shadow = textShadowEl.value;
+    
+    const borderRadiusEl = document.getElementById('footerBorderRadius');
+    if (borderRadiusEl && borderRadiusEl.value) config.border_radius = borderRadiusEl.value;
+    
+    console.log('Collected enhanced footer config:', config);
+    return config;
+  }
+  
+  /**
+   * Populate enhanced footer configuration fields
+   * @param {Object} footerData - Footer data from API
+   */
+  populateEnhancedFooterFields(footerData) {
+    console.log('Populating enhanced footer fields with data:', footerData);
+    
+    // Separator settings
+    const separatorTypeEl = document.getElementById('footerSeparatorType');
+    if (separatorTypeEl) {
+      separatorTypeEl.value = footerData.separator_type || 'crown';
+    }
+    
+    const customSeparatorEl = document.getElementById('footerCustomSeparator');
+    if (customSeparatorEl) {
+      customSeparatorEl.value = footerData.custom_separator || '|';
+      // Show/hide based on separator type
+      customSeparatorEl.style.display = footerData.separator_type === 'custom' ? 'block' : 'none';
+    }
+    
+    const separatorSpacingEl = document.getElementById('footerSeparatorSpacing');
+    if (separatorSpacingEl) {
+      separatorSpacingEl.value = footerData.separator_spacing || '0 0.5em';
+    }
+    
+    const separatorColorEl = document.getElementById('footerSeparatorColor');
+    if (separatorColorEl) {
+      separatorColorEl.value = footerData.separator_color || '';
+    }
+    
+    // Animation settings
+    const animationTimingEl = document.getElementById('footerAnimationTiming');
+    if (animationTimingEl) {
+      animationTimingEl.value = footerData.animation_timing || 'linear';
+    }
+    
+    const pauseOnHoverEl = document.getElementById('footerPauseOnHover');
+    if (pauseOnHoverEl) {
+      pauseOnHoverEl.checked = footerData.pause_on_hover || false;
+    }
+    
+    const reverseOnCompleteEl = document.getElementById('footerReverseOnComplete');
+    if (reverseOnCompleteEl) {
+      reverseOnCompleteEl.checked = footerData.reverse_on_complete || false;
+    }
+    
+    // Visual styling
+    const opacityEl = document.getElementById('footerOpacity');
+    const opacityValueEl = document.getElementById('footerOpacityValue');
+    if (opacityEl && opacityValueEl) {
+      const opacity = footerData.opacity !== undefined ? footerData.opacity : 1.0;
+      opacityEl.value = opacity;
+      opacityValueEl.textContent = opacity.toFixed(1);
+    }
+    
+    const textShadowEl = document.getElementById('footerTextShadow');
+    if (textShadowEl) {
+      textShadowEl.value = footerData.text_shadow || '';
+    }
+    
+    const borderRadiusEl = document.getElementById('footerBorderRadius');
+    if (borderRadiusEl) {
+      borderRadiusEl.value = footerData.border_radius || '';
+    }
+    
+    console.log('Enhanced footer fields populated successfully');
   }
 
 }

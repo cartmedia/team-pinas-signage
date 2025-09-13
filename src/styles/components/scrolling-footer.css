@@ -17,6 +17,14 @@
   --footer-backface-visibility: var(--footer-backface-visibility, hidden);
   --footer-animation-state: var(--footer-animation-state, running);
   
+  /* Enhanced styling properties */
+  --footer-opacity: var(--footer-opacity, 1.0);
+  --footer-text-shadow: var(--footer-text-shadow, none);
+  --footer-border-radius: var(--footer-border-radius, 0);
+  --footer-animation-timing: var(--footer-animation-timing, linear);
+  --footer-separator-spacing: var(--footer-separator-spacing, 0 0.5em);
+  --footer-separator-color: var(--footer-separator-color, inherit);
+  
   /* Base container properties */
   position: relative;
   width: 100%;
@@ -25,13 +33,18 @@
   /* Background and styling */
   background-color: var(--footer-bg-color);
   color: var(--footer-text-color);
+  font-size: var(--footer-font-size);
+  
+  /* Enhanced styling support */
+  opacity: var(--footer-opacity);
+  text-shadow: var(--footer-text-shadow);
+  border-radius: var(--footer-border-radius);
   
   /* Performance optimizations */
   overflow: hidden;
   contain: layout style paint;
   
   /* Initial state: hidden */
-  opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
 }
@@ -489,6 +502,105 @@
   /* Optimize for static display */
   will-change: auto;
   transform: none;
+}
+
+/* ===== DISCRETE MODE STYLES ===== */
+
+/* Discrete mode container */
+.discrete-mode {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* Discrete segment container */
+.discrete-segment-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Discrete text segments with fade transitions */
+.discrete-text-segment {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s var(--footer-animation-timing), 
+              transform 0.5s var(--footer-animation-timing);
+  font-size: inherit;
+  color: inherit;
+  text-shadow: inherit;
+  white-space: nowrap;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== ENHANCED SEPARATOR STYLES ===== */
+
+/* Separator spacing and color support */
+.scrolling-separator {
+  margin: var(--footer-separator-spacing);
+  color: var(--footer-separator-color);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Separator type-specific styling */
+.separator-type-crown .scrolling-separator {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.separator-type-star .scrolling-separator {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.separator-type-dot .scrolling-separator {
+  font-size: 1.5em;
+  line-height: 0.6;
+}
+
+.separator-type-dash .scrolling-separator {
+  font-size: 1em;
+  line-height: 1;
+  font-weight: bold;
+}
+
+.separator-type-space .scrolling-separator {
+  /* Space separators are invisible but maintain spacing */
+  opacity: 0;
+}
+
+.separator-type-custom .scrolling-separator {
+  /* Custom separators inherit all styling */
+  font-size: inherit;
+  line-height: 1;
+}
+
+/* ===== PAUSE ON HOVER SUPPORT ===== */
+
+/* When pause on hover is enabled, add hover state for continuous mode */
+.SignageFooter.pause-on-hover .scrolling-footer-content:hover {
+  animation-play-state: paused;
+}
+
+.SignageFooter.pause-on-hover .scrolling-footer-content:hover .scrolling-text-run {
+  animation-play-state: paused;
+}
+
+/* ===== ANIMATION TIMING FUNCTION SUPPORT ===== */
+
+/* Override animation timing with custom property */
+.scrolling-footer-content {
+  animation-timing-function: var(--footer-animation-timing);
+}
+
+.scrolling-text-run {
+  animation-timing-function: var(--footer-animation-timing);
 }
 
 /* === PRINT STYLES === */

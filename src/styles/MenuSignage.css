@@ -117,14 +117,28 @@ body {
 .SignageFooter {
   grid-area: footer;
   z-index: 100; /* Higher z-index to ensure it's above background elements */
-  /* Ensure footer is always visible and positioned correctly */
   position: relative;
   min-height: var(--footer-height);
   height: var(--footer-height); /* Force exact height */
-  /* Ensure footer sticks to bottom of viewport */
+}
+
+/* Component-controlled visibility states */
+.SignageFooter.footer-hidden {
+  display: none;
+}
+
+.SignageFooter.footer-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.SignageFooter.footer-transitioning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* HEADER LAYOUT - CSS Grid */
@@ -169,6 +183,10 @@ body {
 .HeaderClock {
   grid-area: clock;
   justify-self: end;
+  align-self: center; /* Vertical centering in grid */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Center content vertically */
   font-family: "futura-pt", sans-serif;
   color: #c19d6c; /* Team Pinas Gold */
   text-shadow: 0 1px 2px rgba(0,0,0,0.6);
@@ -334,43 +352,6 @@ body {
 }
 /* DailyMenuQR removed */
 
-/* FOOTER LAYOUT */
-.SignageFooter {
-  background-color: #c19d6c; /* Team Pinas Gold */
-  color: var(--footer-text-color, #101010); /* Configurable text color with dark default */
-  font-family: "futura-pt", sans-serif;
-  font-size: 3vh;
-  text-align: center;
-  padding: 0; /* Remove padding to rely on flexbox centering */
-  overflow: hidden;
-  border-top: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1; /* Tight line height for better control */
-}
-
-/* Footer text color variants */
-.SignageFooter.footer-light {
-  color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.SignageFooter.footer-dark {
-  color: #101010;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
-}
-
-/* Per-row text color overrides */
-.ScrollingText .footer-text-light {
-  color: #ffffff !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-}
-
-.ScrollingText .footer-text-dark {
-  color: #101010 !important;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
-}
 
 .CategorySlot {
   display: flex;
@@ -468,52 +449,6 @@ hr {
   width: 100%;
 }
 
-/* Performance: Use transform3d for hardware acceleration */
-@keyframes scrollTextContinuous {
-  0% {
-    transform: translate3d(100%, 0, 0);
-  }
-  100% {
-    transform: translate3d(-100%, 0, 0);
-  }
-}
-
-@keyframes scrollTextDiscrete {
-  0% {
-    transform: translate3d(100%, 0, 0);
-  }
-  100% {
-    transform: translate3d(-100%, 0, 0);
-  }
-}
-
-.ScrollingText {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-}
-
-.ScrollingText span {
-  display: inline-block;
-  animation: scrollText 30s linear infinite; /* default duration; JS will adjust */
-  white-space: nowrap;
-  will-change: transform;
-  vertical-align: middle; /* Ensure proper vertical alignment */
-  line-height: 1; /* Match footer line-height */
-  /* Performance: Use transform3d for hardware acceleration */
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-/* Separator crown icon in footer */
-.ScrollingText img.sep {
-  height: 2.2vh; /* smaller to fit better within footer */
-  vertical-align: middle; /* center align with text */
-  transform: none; /* remove translateY to prevent overflow */
-  margin: 0 1.5vh;
-  opacity: 0.9;
-}
 
 /* Legacy MenuLogo - now handled by HeaderLogo */
 .MenuLogo {

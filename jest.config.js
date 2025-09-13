@@ -18,7 +18,7 @@ module.exports = {
     },
     {
       displayName: 'contract-api',
-      testMatch: ['<rootDir>/tests/contract/footer/test_footer_*.test.js'],
+      testMatch: ['<rootDir>/tests/contract/footer/test_footer_*.test.js', '<rootDir>/tests/contract/test-footer-*.js'],
       testEnvironment: 'node'
     },
     {
