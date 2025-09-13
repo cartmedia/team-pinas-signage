@@ -894,6 +894,162 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Separator Settings -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i class="fas fa-grip-lines-vertical mr-2 text-purple-500"></i>
+                                        Scheidingstekens
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Scheidingstype
+                                            </label>
+                                            <select id="footerSeparatorType" 
+                                                    class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="crown" selected>Kroon 👑</option>
+                                                <option value="star">Ster ⭐</option>
+                                                <option value="dot">Punt •</option>
+                                                <option value="dash">Streepje —</option>
+                                                <option value="space">Spatie</option>
+                                                <option value="custom">Aangepast</option>
+                                            </select>
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Kies het type scheidingsteken tussen segmenten
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Aangepast Scheidingsteken
+                                            </label>
+                                            <input type="text" id="footerCustomSeparator" maxlength="10"
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   placeholder="bijv. | of →">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Alleen gebruikt wanneer type "Aangepast" is geselecteerd
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Scheidingsteken Afstand
+                                            </label>
+                                            <input type="text" id="footerSeparatorSpacing"
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   value="0 0.5em"
+                                                   placeholder="0 0.5em">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                CSS margin waarde (bijv. "0 0.5em" voor horizontale ruimte)
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Scheidingsteken Kleur
+                                            </label>
+                                            <input type="color" id="footerSeparatorColor"
+                                                   class="mt-1 block w-full h-10 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Optioneel: aparte kleur voor scheidingstekens (leeg = tekst kleur)
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Advanced Animation Settings -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i class="fas fa-cogs mr-2 text-cyan-500"></i>
+                                        Geavanceerde Animatie
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Animatie Timing
+                                            </label>
+                                            <select id="footerAnimationTiming" 
+                                                    class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="linear" selected>Linear (constante snelheid)</option>
+                                                <option value="ease">Ease (langzaam-snel-langzaam)</option>
+                                                <option value="ease-in">Ease In (langzaam starten)</option>
+                                                <option value="ease-out">Ease Out (langzaam eindigen)</option>
+                                                <option value="ease-in-out">Ease In Out (smooth)</option>
+                                            </select>
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Hoe de animatie accelereert/deceleert
+                                            </p>
+                                        </div>
+                                        <div class="flex items-center space-x-4">
+                                            <div>
+                                                <label class="flex items-center cursor-pointer">
+                                                    <input type="checkbox" id="footerPauseOnHover"
+                                                           class="rounded border-gray-300 dark:border-gray-600 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                                        Pauzeren bij hover
+                                                    </span>
+                                                </label>
+                                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    Animatie stopt wanneer je met de muis over de footer gaat
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label class="flex items-center cursor-pointer">
+                                                    <input type="checkbox" id="footerReverseOnComplete"
+                                                           class="rounded border-gray-300 dark:border-gray-600 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                                        Omgekeerd na voltooiing
+                                                    </span>
+                                                </label>
+                                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    Animatie keert richting om na elk cycle
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Visual Styling -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <i class="fas fa-paint-brush mr-2 text-pink-500"></i>
+                                        Visuele Styling
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Transparantie
+                                            </label>
+                                            <input type="range" id="footerOpacity" min="0" max="1" step="0.1" value="1.0"
+                                                   class="mt-1 block w-full">
+                                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                <span>Transparant</span>
+                                                <span id="footerOpacityValue">100%</span>
+                                                <span>Ondoorzichtig</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Tekst Schaduw
+                                            </label>
+                                            <input type="text" id="footerTextShadow"
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   placeholder="bijv. 2px 2px 4px rgba(0,0,0,0.5)">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                CSS text-shadow waarde voor schaduw effect
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Hoek Afronding
+                                            </label>
+                                            <input type="text" id="footerBorderRadius"
+                                                   class="mt-1 block w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   placeholder="bijv. 8px of 0.5rem">
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                CSS border-radius waarde voor afgeronde hoeken
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <!-- Footer Colors -->
                                 <div>
                                     <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
@@ -1506,7 +1662,10 @@
     <script src="/src/scripts/shared/smart-logo.js"></script>
     <script src="/src/scripts/shared/logo-controls.js"></script>
     <script type="module" src="/src/scripts/shared/auth.js"></script>
+    <script src="/src/scripts/display/components/ScrollingFooter.js"></script>
+    <script src="/src/scripts/admin/components/FooterPreview.js"></script>
     <script type="module" src="/src/scripts/admin/admin.js"></script>
+    <link rel="stylesheet" href="/src/styles/admin/footer-preview.css">
     
     <!-- Version Loading Script -->
     <script>
@@ -1701,6 +1860,9 @@
                         console.log('Creating AdminInterface instance for development...');
                         window.adminInterface = new window.AdminInterface();
                         window.adminInterface.init();
+                        
+                        // Initialize enhanced footer inputs
+                        initEnhancedFooterInputs();
                         
                         // Show admin container
                         const adminContainer = document.getElementById('adminContainer');

@@ -1,0 +1,104 @@
+/**
+ * Footer Component CSS
+ * 
+ * Consolidated footer styling that replaces legacy MenuSignage footer CSS.
+ * Provides clean, conflict-free component architecture with CSS custom properties.
+ */
+
+/* Main footer component with CSS custom properties support */
+.SignageFooter.footer-visible {
+  background-color: var(--footer-bg-color, #c19d6c); /* Team Pinas Gold fallback */
+  color: var(--footer-text-color, #101010);
+  font-family: "futura-pt", sans-serif;
+  font-size: var(--footer-font-size, 3vh);
+  text-align: center;
+  padding: 0;
+  overflow: hidden;
+  border-top: none;
+  line-height: 1;
+}
+
+/* Content wrapper for scrolling text */
+.scrolling-footer-content {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Text segments with animation support */
+.scrolling-text-segment {
+  display: inline-block;
+  color: var(--footer-text-color, #101010);
+  font-size: var(--footer-font-size, 3vh);
+  font-family: "futura-pt", sans-serif;
+  white-space: nowrap;
+  will-change: transform;
+  vertical-align: middle;
+  line-height: 1;
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Separator elements (crowns, images) */
+.scrolling-separator {
+  display: inline-block;
+  height: calc(var(--footer-font-size, 3vh) * 0.8);
+  margin: 0 1.5vh;
+  vertical-align: middle;
+  opacity: 0.9;
+  transform: none; /* Prevent overflow issues */
+}
+
+/* Animation classes - applied dynamically by component */
+.scrolling-text-segment.animated {
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: none;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .scrolling-text-segment.animated {
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  .SignageFooter.footer-visible {
+    /* Static display for reduced motion */
+    justify-content: center;
+  }
+  
+  .scrolling-footer-content {
+    justify-content: center;
+    animation: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .SignageFooter.footer-visible {
+    background-color: var(--footer-bg-color, #000000);
+    color: var(--footer-text-color, #ffffff);
+    border-top: 2px solid var(--footer-text-color, #ffffff);
+  }
+  
+  .scrolling-separator {
+    opacity: 1;
+    filter: contrast(200%);
+  }
+}
+
+/* Responsive adjustments for very small screens */
+@media screen and (max-height: 480px) {
+  .SignageFooter.footer-visible {
+    font-size: calc(var(--footer-font-size, 3vh) * 0.8);
+  }
+  
+  .scrolling-separator {
+    height: calc(var(--footer-font-size, 3vh) * 0.6);
+    margin: 0 1vh;
+  }
+}

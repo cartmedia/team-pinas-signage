@@ -1,0 +1,509 @@
+openapi: 3.0.3
+info:
+  title: Team Pinas Footer Configuration API
+  description: REST API for managing configurable news ticker footer
+  version: 1.0.0
+  contact:
+    name: Team Pinas Development
+    url: https://github.com/cartmedia/team-pinas-signage
+
+servers:
+  - url: https://team-pinas.netlify.app/.netlify/functions
+    description: Production server
+  - url: http://localhost:8080/.netlify/functions
+    description: Local development server
+
+paths:
+  /footer:
+    get:
+      summary: Get active footer configuration
+      description: Retrieves the currently active and visible footer configuration for display
+      operationId: getFooterConfig
+      tags: [Public API]
+      responses:
+        '200':
+          description: Active footer configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterConfiguration'
+              example:
+                id: 7
+                footer_text: "WELKOM BIJ TEAM PINAS <separator> VERSE MAALTIJDEN VOOR IEDEREEN <separator> PERSONAL TRAINING VANAF €37,50"
+                text_color: "#1a1a1a"
+                background_color: "#c19d6c"
+                font_size: "3vh"
+                scroll_speed: 8
+                scroll_direction: "continuous"
+                separator_type: "crown"
+                custom_separator: null
+                is_visible: true
+                is_active: true
+                created_at: "2025-09-13T10:30:00Z"
+                updated_at: "2025-09-13T11:15:00Z"
+        '204':
+          description: No active footer configuration found
+        '404':
+          description: No visible footer configuration available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "No visible footer configuration found"
+                code: "FOOTER_NOT_VISIBLE"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      
+    put:
+      summary: Update footer configuration
+      description: Updates the active footer configuration (admin only)
+      operationId: updateFooterConfig
+      tags: [Admin API]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FooterConfigurationRequest'
+            example:
+              footer_text: "NIEUW BERICHT <separator> UPDATED CONTENT"
+              text_color: "#ffffff"
+              background_color: "#333333"
+              font_size: "2.8vh"
+              scroll_speed: 12
+              scroll_direction: "continuous"
+              separator_type: "custom"
+              custom_separator: " | "
+              is_visible: true
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterConfiguration'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                error: "Validation failed"
+                code: "VALIDATION_ERROR"
+                details:
+                  - field: "scroll_speed"
+                    message: "Must be between 1 and 100"
+                  - field: "text_color"
+                    message: "Must be a valid hex color"
+        '401':
+          description: Unauthorized - Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /footer/preview:
+    post:
+      summary: Preview footer configuration
+      description: Generate preview of footer configuration without saving (admin only)
+      operationId: previewFooterConfig
+      tags: [Admin API]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FooterConfigurationRequest'
+      responses:
+        '200':
+          description: Preview generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterPreview'
+              example:
+                config:
+                  footer_text: "TEST MESSAGE <separator> PREVIEW MODE"
+                  text_color: "#000000"
+                  background_color: "#ffff00"
+                  scroll_speed: 15
+                parsed_segments:
+                  - text: "TEST MESSAGE"
+                    separator_after: "👑"
+                  - text: "PREVIEW MODE"
+                    separator_after: ""
+                rendered_html: "<div class='scrolling-footer-content'>TEST MESSAGE<span class='separator'>👑</span>PREVIEW MODE</div>"
+                estimated_duration: 12.5
+                performance_warning: null
+        '400':
+          description: Invalid preview data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /footer/configurations:
+    get:
+      summary: List all footer configurations
+      description: Get list of all footer configurations for admin management
+      operationId: listFooterConfigs
+      tags: [Admin API]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: include_inactive
+          in: query
+          description: Include inactive configurations
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List of footer configurations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FooterConfigurationSummary'
+              example:
+                - id: 7
+                  footer_text: "WELKOM BIJ TEAM PINAS <separator> VERSE..."
+                  is_active: true
+                  is_visible: true
+                  created_at: "2025-09-13T10:30:00Z"
+                  updated_at: "2025-09-13T11:15:00Z"
+                - id: 6
+                  footer_text: "OLD MESSAGE <separator> ARCHIVE..."
+                  is_active: false
+                  is_visible: false
+                  created_at: "2025-09-12T08:20:00Z"
+                  updated_at: "2025-09-12T08:20:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create new footer configuration
+      description: Create a new footer configuration (inactive by default)
+      operationId: createFooterConfig
+      tags: [Admin API]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FooterConfigurationRequest'
+      responses:
+        '201':
+          description: Configuration created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterConfiguration'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /footer/configurations/{id}/activate:
+    post:
+      summary: Activate footer configuration
+      description: Set a configuration as active (deactivates others)
+      operationId: activateFooterConfig
+      tags: [Admin API]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Configuration ID to activate
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Configuration activated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FooterConfiguration'
+        '404':
+          description: Configuration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    FooterConfiguration:
+      type: object
+      required:
+        - id
+        - footer_text
+        - text_color
+        - background_color
+        - scroll_speed
+        - scroll_direction
+        - separator_type
+        - is_visible
+        - is_active
+      properties:
+        id:
+          type: integer
+          description: Unique configuration identifier
+          example: 7
+        footer_text:
+          type: string
+          maxLength: 10000
+          description: Footer content with separator tokens
+          example: "WELKOM BIJ TEAM PINAS <separator> VERSE MAALTIJDEN"
+        text_color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Text color as hex value
+          example: "#1a1a1a"
+        background_color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Background color as hex value
+          example: "#c19d6c"
+        font_size:
+          type: string
+          description: CSS font size value
+          example: "3vh"
+        scroll_speed:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Scrolling speed in pixels per second
+          example: 8
+        scroll_direction:
+          type: string
+          enum: [continuous, discrete, static]
+          description: Animation behavior type
+          example: "continuous"
+        separator_type:
+          type: string
+          enum: [custom, crown, star, dot, dash, space]
+          description: Type of separator between content segments
+          example: "crown"
+        custom_separator:
+          type: string
+          nullable: true
+          maxLength: 50
+          description: Custom separator text (when separator_type=custom)
+          example: " | "
+        is_visible:
+          type: boolean
+          description: Whether footer should be displayed
+          example: true
+        is_active:
+          type: boolean
+          description: Whether this is the active configuration
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Configuration creation timestamp
+          example: "2025-09-13T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+          example: "2025-09-13T11:15:00Z"
+
+    FooterConfigurationRequest:
+      type: object
+      required:
+        - footer_text
+        - text_color
+        - background_color
+        - scroll_speed
+        - scroll_direction
+        - separator_type
+        - is_visible
+      properties:
+        footer_text:
+          type: string
+          maxLength: 10000
+          description: Footer content with separator tokens
+        text_color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Text color as hex value
+        background_color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Background color as hex value
+        font_size:
+          type: string
+          description: CSS font size value
+          default: "3vh"
+        scroll_speed:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Scrolling speed in pixels per second
+        scroll_direction:
+          type: string
+          enum: [continuous, discrete, static]
+          description: Animation behavior type
+        separator_type:
+          type: string
+          enum: [custom, crown, star, dot, dash, space]
+          description: Type of separator between content segments
+        custom_separator:
+          type: string
+          nullable: true
+          maxLength: 50
+          description: Custom separator text (required when separator_type=custom)
+        is_visible:
+          type: boolean
+          description: Whether footer should be displayed
+
+    FooterConfigurationSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        footer_text:
+          type: string
+          description: Truncated footer text for listing
+        is_active:
+          type: boolean
+        is_visible:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FooterPreview:
+      type: object
+      properties:
+        config:
+          $ref: '#/components/schemas/FooterConfigurationRequest'
+        parsed_segments:
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+              separator_after:
+                type: string
+        rendered_html:
+          type: string
+          description: HTML representation of footer
+        estimated_duration:
+          type: number
+          description: Estimated scroll duration in seconds
+        performance_warning:
+          type: string
+          nullable: true
+          description: Warning if configuration may cause performance issues
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - code
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        details:
+          type: string
+          nullable: true
+          description: Additional error context
+
+    ValidationError:
+      type: object
+      required:
+        - error
+        - code
+        - details
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        details:
+          type: array
+          description: List of field validation errors
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: Field name with validation error
+              message:
+                type: string
+                description: Field-specific error message
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Admin API key for authenticated operations
+
+security: []
+
+tags:
+  - name: Public API
+    description: Endpoints accessible to signage displays
+  - name: Admin API
+    description: Administrative endpoints requiring authentication

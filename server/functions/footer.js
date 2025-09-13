@@ -1,8 +1,16 @@
 // Netlify Function for Team Pinas Signage - Footer Configuration Endpoint
 // Provides GET (public), POST/PUT (admin) for footer content management
+// T017: Enhanced footer API with full configuration support
 
 const { Pool } = require('pg');
 const { requireAuth, createAuthErrorResponse } = require('./auth-middleware');
+const FooterConfiguration = require('../models/FooterConfiguration');
+const FooterContentService = require('../services/FooterContentService');
+const SeparatorService = require('../services/SeparatorService');
+
+// Initialize services
+const footerContentService = new FooterContentService();
+const separatorService = new SeparatorService();
 
 // Initialize Neon connection
 const pool = new Pool({
@@ -18,72 +26,31 @@ const headers = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Content-Type': 'application/json',
-  'Cache-Control': 'public, max-age=300' // 5-minute cache for GET requests
+  'Cache-Control': process.env.NODE_ENV === 'development' ? 'no-cache, no-store, must-revalidate' : 'public, max-age=300' // No cache in development
 };
 
-// Validation schema for footer data
+// Enhanced validation using FooterConfiguration model
 function validateFooterData(data, isUpdate = false) {
-  const errors = [];
-  
-  // footer_text validation (required for POST, optional for PUT)
-  if (!isUpdate && (!data.footer_text || typeof data.footer_text !== 'string' || data.footer_text.trim().length === 0)) {
-    errors.push('footer_text is required and must be a non-empty string');
-  } else if (isUpdate && data.footer_text !== undefined) {
-    if (typeof data.footer_text !== 'string' || data.footer_text.trim().length === 0) {
-      errors.push('footer_text must be a non-empty string when provided');
+  try {
+    const validation = FooterConfiguration.validateRequest(data, isUpdate);
+    
+    if (!validation.valid) {
+      return validation.errors.map(err => `${err.field}: ${err.message}`);
     }
-  }
-  
-  // footer_text length validation
-  if (data.footer_text !== undefined && typeof data.footer_text === 'string' && data.footer_text.length > 2000) {
-    errors.push('footer_text must not exceed 2000 characters');
-  }
-  
-  // text_color validation (optional, but must be valid hex when provided)
-  if (data.text_color !== undefined) {
-    if (typeof data.text_color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(data.text_color)) {
-      errors.push('text_color must be a valid hex color (e.g., #FF5733)');
+    
+    // Additional validations for content (only if footer_text is provided)
+    if (data.footer_text) {
+      const contentValidation = footerContentService.validateContent(validation.config);
+      if (!contentValidation.valid) {
+        return contentValidation.errors.map(err => `${err.field}: ${err.message}`);
+      }
     }
+    
+    return [];
+  } catch (error) {
+    console.error('Validation error:', error);
+    return ['Invalid configuration data'];
   }
-  
-  // background_color validation (optional, but must be valid hex when provided)
-  if (data.background_color !== undefined && data.background_color !== null) {
-    if (typeof data.background_color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(data.background_color)) {
-      errors.push('background_color must be a valid hex color or null');
-    }
-  }
-  
-  // scroll_speed validation (optional, but must be in range when provided)
-  if (data.scroll_speed !== undefined) {
-    if (typeof data.scroll_speed !== 'number' || data.scroll_speed < 10 || data.scroll_speed > 100) {
-      errors.push('scroll_speed must be a number between 10 and 100');
-    }
-  }
-  
-  // scroll_direction validation (optional, but must be valid value when provided)
-  if (data.scroll_direction !== undefined) {
-    if (!['continuous', 'discrete', 'static'].includes(data.scroll_direction)) {
-      errors.push('scroll_direction must be one of: continuous, discrete, static');
-    }
-  }
-  
-  // font_size validation (optional, but must be valid CSS format when provided)
-  if (data.font_size !== undefined) {
-    if (typeof data.font_size !== 'string' || !/^[0-9]+(\.[0-9]+)?(vh|px|em|rem)$/.test(data.font_size)) {
-      errors.push('font_size must be a valid CSS size (e.g., 3vh, 16px, 1.2em)');
-    }
-  }
-  
-  // divider_image validation (optional, but should be a reasonable path when provided)
-  if (data.divider_image !== undefined) {
-    if (typeof data.divider_image !== 'string' || data.divider_image.length === 0) {
-      errors.push('divider_image must be a non-empty string when provided');
-    } else if (data.divider_image.length > 255) {
-      errors.push('divider_image must not exceed 255 characters');
-    }
-  }
-  
-  return errors;
 }
 
 // GET: Retrieve active footer configuration (public endpoint)
@@ -94,10 +61,14 @@ async function handleGet(client) {
     const query = `
       SELECT 
         id, footer_text, text_color, background_color, 
-        scroll_speed, scroll_direction, divider_image, 
-        font_size, is_active, created_at, updated_at
+        scroll_speed, scroll_direction, font_size, 
+        is_visible, is_active, separator_type, custom_separator,
+        separator_spacing, separator_color, animation_timing,
+        pause_on_hover, reverse_on_complete, opacity,
+        text_shadow, border_radius, divider_image,
+        created_at, updated_at
       FROM footer_config 
-      WHERE is_active = true 
+      WHERE is_active = true AND is_visible = true
       ORDER BY updated_at DESC 
       LIMIT 1
     `;
@@ -106,23 +77,29 @@ async function handleGet(client) {
     
     if (result.rows.length === 0) {
       return {
-        statusCode: 404,
+        statusCode: 204,
         headers,
-        body: JSON.stringify({ 
-          error: 'No active footer configuration found',
-          code: 'FOOTER_NOT_FOUND'
-        })
+        body: ''
       };
     }
     
-    const footerConfig = result.rows[0];
+    const row = result.rows[0];
+    const footerConfig = FooterConfiguration.fromDatabaseRow(row);
+    
+    // Process content for display
+    const processedContent = footerContentService.processFooterContent(footerConfig);
+    
+    const response = {
+      ...footerConfig.toApiResponse(),
+      processedContent: processedContent.success ? processedContent : null
+    };
     
     console.log(`Retrieved footer config ID ${footerConfig.id}: "${footerConfig.footer_text.substring(0, 50)}..."`);
     
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(footerConfig)
+      body: JSON.stringify(response)
     };
     
   } catch (error) {
@@ -167,30 +144,42 @@ async function handlePost(client, requestBody) {
       await client.query('UPDATE footer_config SET is_active = false WHERE is_active = true');
       
       // Insert new configuration as active
+      const config = new FooterConfiguration(data);
       const insertQuery = `
         INSERT INTO footer_config (
           footer_text, text_color, background_color, 
-          scroll_speed, scroll_direction, divider_image, 
-          font_size, is_active
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, true)
-        RETURNING 
-          id, footer_text, text_color, background_color, 
-          scroll_speed, scroll_direction, divider_image, 
-          font_size, is_active, created_at, updated_at
+          scroll_speed, scroll_direction, font_size, 
+          is_visible, separator_type, custom_separator,
+          separator_spacing, separator_color, animation_timing,
+          pause_on_hover, reverse_on_complete, opacity,
+          text_shadow, border_radius, divider_image, is_active
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, true)
+        RETURNING *
       `;
       
       const values = [
-        data.footer_text,
-        data.text_color || '#101010',
-        data.background_color || null,
-        data.scroll_speed || 30,
-        data.scroll_direction || 'continuous',
-        data.divider_image || 'assets/images/pinas_kroon.svg',
-        data.font_size || '3vh'
+        config.footer_text,
+        config.text_color,
+        config.background_color,
+        config.scroll_speed,
+        config.scroll_direction,
+        config.font_size,
+        config.is_visible,
+        config.separator_type,
+        config.custom_separator,
+        config.separator_spacing,
+        config.separator_color,
+        config.animation_timing,
+        config.pause_on_hover,
+        config.reverse_on_complete,
+        config.opacity,
+        config.text_shadow,
+        config.border_radius,
+        data.divider_image || 'assets/images/pinas_kroon.svg'
       ];
       
       const result = await client.query(insertQuery, values);
-      const newFooter = result.rows[0];
+      const newFooter = FooterConfiguration.fromDatabaseRow(result.rows[0]);
       
       await client.query('COMMIT');
       
@@ -199,7 +188,7 @@ async function handlePost(client, requestBody) {
       return {
         statusCode: 201,
         headers,
-        body: JSON.stringify(newFooter)
+        body: JSON.stringify(newFooter.toApiResponse())
       };
       
     } catch (insertError) {
@@ -276,40 +265,21 @@ async function handlePut(client, requestBody) {
     const updateValues = [];
     let paramIndex = 1;
     
-    if (data.footer_text !== undefined) {
-      updateFields.push(`footer_text = $${paramIndex++}`);
-      updateValues.push(data.footer_text);
-    }
+    const config = new FooterConfiguration(data);
+    const fieldsToUpdate = [
+      'footer_text', 'text_color', 'background_color', 'scroll_speed', 
+      'scroll_direction', 'font_size', 'is_visible', 'separator_type',
+      'custom_separator', 'separator_spacing', 'separator_color',
+      'animation_timing', 'pause_on_hover', 'reverse_on_complete',
+      'opacity', 'text_shadow', 'border_radius', 'divider_image'
+    ];
     
-    if (data.text_color !== undefined) {
-      updateFields.push(`text_color = $${paramIndex++}`);
-      updateValues.push(data.text_color);
-    }
-    
-    if (data.background_color !== undefined) {
-      updateFields.push(`background_color = $${paramIndex++}`);
-      updateValues.push(data.background_color);
-    }
-    
-    if (data.scroll_speed !== undefined) {
-      updateFields.push(`scroll_speed = $${paramIndex++}`);
-      updateValues.push(data.scroll_speed);
-    }
-    
-    if (data.scroll_direction !== undefined) {
-      updateFields.push(`scroll_direction = $${paramIndex++}`);
-      updateValues.push(data.scroll_direction);
-    }
-    
-    if (data.divider_image !== undefined) {
-      updateFields.push(`divider_image = $${paramIndex++}`);
-      updateValues.push(data.divider_image);
-    }
-    
-    if (data.font_size !== undefined) {
-      updateFields.push(`font_size = $${paramIndex++}`);
-      updateValues.push(data.font_size);
-    }
+    fieldsToUpdate.forEach(field => {
+      if (data[field] !== undefined) {
+        updateFields.push(`${field} = $${paramIndex++}`);
+        updateValues.push(config[field]);
+      }
+    });
     
     if (updateFields.length === 0) {
       return {
@@ -329,23 +299,20 @@ async function handlePut(client, requestBody) {
       UPDATE footer_config 
       SET ${updateFields.join(', ')}
       WHERE id = $${paramIndex}
-      RETURNING 
-        id, footer_text, text_color, background_color, 
-        scroll_speed, scroll_direction, divider_image, 
-        font_size, is_active, created_at, updated_at
+      RETURNING *
     `;
     
     updateValues.push(currentFooter.id);
     
     const updateResult = await client.query(updateQuery, updateValues);
-    const updatedFooter = updateResult.rows[0];
+    const updatedFooter = FooterConfiguration.fromDatabaseRow(updateResult.rows[0]);
     
     console.log(`Updated footer config ID ${updatedFooter.id}`);
     
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(updatedFooter)
+      body: JSON.stringify(updatedFooter.toApiResponse())
     };
     
   } catch (error) {
@@ -373,6 +340,7 @@ async function handlePut(client, requestBody) {
     };
   }
 }
+
 
 // Main handler
 exports.handler = async (event, context) => {

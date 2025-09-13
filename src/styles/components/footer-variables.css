@@ -1,0 +1,138 @@
+/**
+ * Footer CSS Custom Properties System
+ * 
+ * Defines CSS custom properties for dynamic footer configuration.
+ * Provides the bridge between database configuration and CSS styling.
+ */
+
+:root {
+  /* Footer Configuration Properties - Set by JavaScript */
+  --footer-text-color: #101010;           /* Default: dark text */
+  --footer-bg-color: #c19d6c;             /* Default: Team Pinas gold */
+  --footer-font-size: 3vh;                /* Default: viewport-based sizing */
+  --footer-scroll-speed: 50px;            /* Default: moderate speed */
+  --footer-height: 7.8vh;                 /* Footer container height */
+  
+  /* Animation Properties - Calculated by component */
+  --footer-animation-duration: 30s;        /* Calculated from content width + speed */
+  --footer-scroll-direction: 1;            /* 1 for left-to-right, -1 for right-to-left */
+  --footer-content-width: 100%;           /* Calculated from actual content */
+  
+  /* State Properties - Managed by component */
+  --footer-visibility: hidden;             /* hidden | visible | transitioning */
+  --footer-animation-state: paused;        /* running | paused | stopped */
+  
+  /* Performance Properties */
+  --footer-will-change: auto;              /* transform | auto (for performance) */
+  --footer-backface-visibility: visible;   /* hidden | visible (for performance) */
+}
+
+/* CSS Custom Property Utilities */
+
+/* Color theme variants */
+.footer-theme-light {
+  --footer-text-color: #ffffff;
+  --footer-bg-color: #1a1a1a;
+}
+
+.footer-theme-dark {
+  --footer-text-color: #101010;
+  --footer-bg-color: #c19d6c;
+}
+
+.footer-theme-high-contrast {
+  --footer-text-color: #ffffff;
+  --footer-bg-color: #000000;
+}
+
+/* Size variants */
+.footer-size-small {
+  --footer-font-size: 2.5vh;
+  --footer-height: 6vh;
+}
+
+.footer-size-medium {
+  --footer-font-size: 3vh;
+  --footer-height: 7.8vh;
+}
+
+.footer-size-large {
+  --footer-font-size: 4vh;
+  --footer-height: 9vh;
+}
+
+/* Speed variants */
+.footer-speed-slow {
+  --footer-scroll-speed: 30px;
+}
+
+.footer-speed-medium {
+  --footer-scroll-speed: 50px;
+}
+
+.footer-speed-fast {
+  --footer-scroll-speed: 80px;
+}
+
+.footer-speed-very-fast {
+  --footer-scroll-speed: 120px;
+}
+
+/* Animation state classes */
+.footer-animation-running {
+  --footer-animation-state: running;
+  --footer-will-change: transform;
+  --footer-backface-visibility: hidden;
+}
+
+.footer-animation-paused {
+  --footer-animation-state: paused;
+  --footer-will-change: auto;
+}
+
+.footer-animation-stopped {
+  --footer-animation-state: stopped;
+  --footer-will-change: auto;
+}
+
+/* Direction variants */
+.footer-direction-left {
+  --footer-scroll-direction: 1;
+}
+
+.footer-direction-right {
+  --footer-scroll-direction: -1;
+}
+
+/* Responsive custom properties */
+@media screen and (max-width: 768px) {
+  :root {
+    --footer-font-size: 2.5vh;
+    --footer-height: 6vh;
+  }
+}
+
+@media screen and (max-height: 480px) {
+  :root {
+    --footer-font-size: 2vh;
+    --footer-height: 5vh;
+  }
+}
+
+/* Reduced motion overrides */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --footer-animation-duration: 0s;
+    --footer-scroll-speed: 0px;
+    --footer-animation-state: stopped;
+    --footer-will-change: auto;
+  }
+}
+
+/* High contrast overrides */
+@media (prefers-contrast: high) {
+  :root {
+    --footer-text-color: #ffffff;
+    --footer-bg-color: #000000;
+  }
+}
