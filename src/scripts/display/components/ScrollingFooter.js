@@ -133,6 +133,12 @@ class ScrollingFooter {
         this.animationState = null;
         
         /**
+         * Separator resolution state tracking
+         * @type {Object|null}
+         */
+        this._separatorState = null;
+        
+        /**
          * Frame counter for performance tracking
          * @type {number}
          */
@@ -177,10 +183,14 @@ class ScrollingFooter {
         // Initialize component
         this._initialize();
         
+        // Initialize separator resolution
+        this._initializeSeparatorResolution();
+        
         console.log(`ScrollingFooter initialized with config:`, {
             text_length: config.footer_text.length,
             scroll_speed: config.scroll_speed,
             direction: config.scroll_direction,
+            separatorType: this._separatorState?.selectedType || 'unknown',
             performanceSystems: {
                 monitor: !!this.performanceMonitor,
                 fallback: !!this.fallbackManager,
@@ -228,6 +238,131 @@ class ScrollingFooter {
         }
         
         console.log(`ScrollingFooter: Parsed ${this.textSegments.length} text segments`);
+    }
+
+    /**
+     * Initialize separator resolution system
+     * Sets up the separator state and resolves the appropriate separator type
+     * @private
+     */
+    _initializeSeparatorResolution() {
+        console.log('ScrollingFooter: Initializing separator resolution');
+        this._separatorState = this._resolveSeparatorType();
+        console.log('ScrollingFooter: Separator resolved:', this._separatorState);
+    }
+
+    /**
+     * Resolve separator type based on priority chain: custom → svg → emoji → space
+     * Implements the core separator resolution logic to prevent double separators
+     * @private
+     * @returns {Object} SeparatorState object with selectedType, content, isLoading, etc.
+     */
+    _resolveSeparatorType() {
+        const startTime = performance.now();
+        
+        try {
+            // Priority 1: Custom separator text (highest priority)
+            if (this.config.separator_text && this.config.separator_text.trim().length > 0) {
+                const separatorState = {
+                    selectedType: 'custom',
+                    content: this.config.separator_text,
+                    isLoading: false,
+                    loadError: null,
+                    resolvedAt: new Date().toISOString()
+                };
+                
+                const endTime = performance.now();
+                console.log(`ScrollingFooter: Custom separator resolved in ${(endTime - startTime).toFixed(2)}ms`);
+                return separatorState;
+            }
+            
+            // Priority 2: SVG crown separator (default)
+            if (this._isSVGAvailable()) {
+                const separatorState = {
+                    selectedType: 'svg',
+                    content: ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ',
+                    isLoading: false,
+                    loadError: null,
+                    resolvedAt: new Date().toISOString()
+                };
+                
+                const endTime = performance.now();
+                console.log(`ScrollingFooter: SVG separator resolved in ${(endTime - startTime).toFixed(2)}ms`);
+                return separatorState;
+            }
+            
+            // Priority 3: Emoji fallback
+            if (this._isEmojiAvailable()) {
+                const separatorState = {
+                    selectedType: 'emoji',
+                    content: ' 👑 ',
+                    isLoading: false,
+                    loadError: 'SVG separator failed to load',
+                    resolvedAt: new Date().toISOString()
+                };
+                
+                const endTime = performance.now();
+                console.log(`ScrollingFooter: Emoji separator resolved in ${(endTime - startTime).toFixed(2)}ms`);
+                return separatorState;
+            }
+            
+            // Priority 4: Space fallback (final fallback)
+            const separatorState = {
+                selectedType: 'space',
+                content: '   ',
+                isLoading: false,
+                loadError: 'All separator options failed',
+                resolvedAt: new Date().toISOString()
+            };
+            
+            const endTime = performance.now();
+            console.log(`ScrollingFooter: Space separator resolved in ${(endTime - startTime).toFixed(2)}ms`);
+            return separatorState;
+            
+        } catch (error) {
+            console.error('ScrollingFooter: Error in separator resolution:', error);
+            
+            // Emergency fallback to space separator
+            return {
+                selectedType: 'space',
+                content: '   ',
+                isLoading: false,
+                loadError: `Separator resolution failed: ${error.message}`,
+                resolvedAt: new Date().toISOString()
+            };
+        }
+    }
+
+    /**
+     * Check if SVG separator is available for use
+     * @private
+     * @returns {boolean} True if SVG can be used, false otherwise
+     */
+    _isSVGAvailable() {
+        // Check for test simulation flags
+        if (this.config._simulateSVGFailure || this._simulateSVGFailure) {
+            return false;
+        }
+        
+        // In a real implementation, this could check if the SVG file exists
+        // For now, we assume SVG is available unless explicitly disabled
+        return true;
+    }
+
+    /**
+     * Check if emoji separator is available for use
+     * @private
+     * @returns {boolean} True if emoji can be used, false otherwise
+     */
+    _isEmojiAvailable() {
+        // Check for test simulation flags
+        if (this.config._simulateEmojiFailure || this._simulateEmojiFailure) {
+            return false;
+        }
+        
+        // Check if the browser supports emoji rendering
+        // For now, we assume emoji is available unless explicitly disabled
+        return true;
     }
 
     /**
@@ -338,6 +473,7 @@ class ScrollingFooter {
 
     /**
      * Update configuration and restart animation if needed
+     * Re-resolves separator type to prevent conflicts during configuration changes
      * @param {Object} newConfig - New configuration object
      * @returns {Promise<boolean>} - Success status
      */
@@ -348,14 +484,25 @@ class ScrollingFooter {
             this.stop();
         }
         
+        // Store old separator state for comparison
+        const oldSeparatorType = this._separatorState?.selectedType;
+        
         // Update configuration
         this.config = { ...newConfig };
         
         // Re-initialize with new CSS custom properties
         this._initialize();
         
+        // Re-resolve separator type with new configuration
+        this._initializeSeparatorResolution();
+        
         // Update CSS custom properties with new values
         this._setCSSCustomProperties();
+        
+        // Log separator change if it occurred
+        if (oldSeparatorType !== this._separatorState?.selectedType) {
+            console.log(`ScrollingFooter: Separator type changed from ${oldSeparatorType} to ${this._separatorState?.selectedType}`);
+        }
         
         if (wasAnimating && newConfig.scroll_direction === 'continuous') {
             return await this.start();
@@ -512,17 +659,31 @@ class ScrollingFooter {
             font-family: inherit;
         `;
         
-        // Add all text segments with separators
-        const separatorText = this.config.separator_text || ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ';
-        let totalContent = this.textSegments.join(separatorText);
-        measureElement.textContent = totalContent;
+        // Ensure separator state is resolved for measurement
+        if (!this._separatorState) {
+            this._separatorState = this._resolveSeparatorType();
+        }
+        
+        // Add all text segments with resolved separator
+        let totalContent = this.textSegments.join(this._separatorState.content);
+        
+        // For measurement, convert HTML to text content estimate
+        if (this._separatorState.selectedType === 'svg') {
+            // Replace SVG with approximate width equivalent for measurement
+            totalContent = this.textSegments.join('  ♔  '); // Crown unicode for measurement
+        } else {
+            // Use actual separator content for text/emoji separators
+            totalContent = this.textSegments.join(this._separatorState.content);
+        }
+        
+        measureElement.innerHTML = totalContent;
         
         document.body.appendChild(measureElement);
         const contentWidth = measureElement.offsetWidth;
         document.body.removeChild(measureElement);
         
         // Calculate how many repetitions needed to fill screen
-        const repetitions = Math.max(1, Math.ceil((containerWidth * 1.5) / contentWidth));
+        const repetitions = Math.max(1, Math.min(10, Math.ceil((containerWidth * 1.5) / Math.max(contentWidth, 100))));
         
         // Calculate animation duration based on scroll speed
         // Convert scroll_speed (1-100 scale) to duration in seconds
@@ -546,7 +707,7 @@ class ScrollingFooter {
 
     /**
      * Create DOM structure for scrolling animation with repeated text segments and separators
-     * Generates multiple repetitions of text segments with appropriate separators between them
+     * Uses resolved separator type exclusively to prevent double separators
      * Each text segment and separator gets proper CSS classes and accessibility attributes
      * @private
      */
@@ -554,10 +715,18 @@ class ScrollingFooter {
         // Clear existing content
         this.container.innerHTML = '';
         
+        // Ensure separator state is resolved
+        if (!this._separatorState) {
+            this._separatorState = this._resolveSeparatorType();
+        }
+        
         // Create scroll content container with new CSS architecture
         const scrollContent = document.createElement('div');
         scrollContent.className = 'scrolling-footer-content';
         scrollContent.id = `scroll-content-${this.instanceId}`;
+        
+        // Add CSS class for separator type tracking
+        scrollContent.classList.add(`separator-type-${this._separatorState.selectedType}`);
         
         // Add repeated text segments
         for (let rep = 0; rep < this.animationState.repetitions; rep++) {
@@ -573,7 +742,11 @@ class ScrollingFooter {
                     const separatorSpan = document.createElement('span');
                     separatorSpan.className = 'scrolling-separator';
                     separatorSpan.setAttribute('aria-hidden', 'true');
-                    separatorSpan.innerHTML = this.config.separator_text || ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ';
+                    separatorSpan.setAttribute('data-separator-type', this._separatorState.selectedType);
+                    
+                    // Use ONLY the resolved separator content
+                    separatorSpan.innerHTML = this._separatorState.content;
+                    
                     scrollContent.appendChild(separatorSpan);
                 }
             }
@@ -581,6 +754,8 @@ class ScrollingFooter {
         
         this.container.appendChild(scrollContent);
         this.scrollContent = scrollContent;
+        
+        console.log(`ScrollingFooter: Created DOM with ${this._separatorState.selectedType} separators`);
     }
 
     /**
@@ -705,16 +880,22 @@ class ScrollingFooter {
 
     /**
      * Render static footer as fallback when animation is disabled or failed
-     * Joins all text segments with separators and displays as static text content
+     * Uses resolved separator type exclusively to prevent double separators
      * Adds 'fallback' CSS class for styling differentiation
      * @private
      */
     _renderStaticFooter() {
         this.container.innerHTML = '';
         
+        // Ensure separator state is resolved
+        if (!this._separatorState) {
+            this._separatorState = this._resolveSeparatorType();
+        }
+        
         // Create static content wrapper
         const staticContent = document.createElement('div');
         staticContent.className = 'scrolling-footer-content';
+        staticContent.classList.add(`separator-type-${this._separatorState.selectedType}`);
         
         // Add static text segments
         for (let i = 0; i < this.textSegments.length; i++) {
@@ -728,7 +909,11 @@ class ScrollingFooter {
                 const separatorSpan = document.createElement('span');
                 separatorSpan.className = 'scrolling-separator';
                 separatorSpan.setAttribute('aria-hidden', 'true');
-                separatorSpan.innerHTML = this.config.separator_text || ' <img class="sep" src="assets/images/pinas_kroon.svg" alt="" role="presentation" aria-hidden="true" /> ';
+                separatorSpan.setAttribute('data-separator-type', this._separatorState.selectedType);
+                
+                // Use ONLY the resolved separator content
+                separatorSpan.innerHTML = this._separatorState.content;
+                
                 staticContent.appendChild(separatorSpan);
             }
         }
@@ -736,7 +921,7 @@ class ScrollingFooter {
         this.container.appendChild(staticContent);
         this._setVisibilityState('visible');
         
-        console.log('ScrollingFooter: Rendered static fallback');
+        console.log(`ScrollingFooter: Rendered static fallback with ${this._separatorState.selectedType} separators`);
     }
 
     /**
@@ -985,7 +1170,11 @@ class ScrollingFooter {
                 const separatorSpan = document.createElement('span');
                 separatorSpan.className = 'scrolling-separator';
                 separatorSpan.setAttribute('aria-hidden', 'true');
-                separatorSpan.innerHTML = this.config.separator_text || ' 👑 ';
+                // Use resolved separator content
+                if (!this._separatorState) {
+                    this._separatorState = this._resolveSeparatorType();
+                }
+                separatorSpan.innerHTML = this._separatorState.content;
                 staticContent.appendChild(separatorSpan);
             }
         }

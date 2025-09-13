@@ -68,3 +68,47 @@ global.mockConsoleLog = () => {
 global.restoreConsoleLog = () => {
   console.log = global.originalConsoleLog;
 };
+
+// Add Node.js polyfills for JSDOM environment
+const { TextEncoder, TextDecoder } = require('util');
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
+// Mock browser APIs for unit testing
+if (typeof window !== 'undefined') {
+  window.matchMedia = jest.fn(() => ({
+    matches: false,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+  }));
+}
+
+// Global test utilities for separator resolution tests
+global.separatorTestUtils = {
+  // Helper to create mock DOM elements for testing
+  createMockContainer: () => {
+    const container = document.createElement('div');
+    container.style.width = '1920px';
+    container.style.height = '100px';
+    return container;
+  },
+  
+  // Helper to create mock configuration objects
+  createMockConfig: (overrides = {}) => {
+    return {
+      footer_text: 'Test content <separator> More content',
+      scroll_direction: 'continuous',
+      scroll_speed: 30,
+      text_color: '#101010',
+      font_size: '3vh',
+      ...overrides
+    };
+  },
+  
+  // Helper to clean up footer instances
+  cleanupFooter: (footer) => {
+    if (footer) {
+      footer.stop();
+    }
+  }
+};

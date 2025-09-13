@@ -1,0 +1,201 @@
+{
+  "test_configurations": {
+    "custom_separator": {
+      "id": 1,
+      "footer_text": "Welcome to Team Pinas <separator> Fresh ingredients daily <separator> Order now online",
+      "separator_text": " | ",
+      "text_color": "#101010",
+      "background_color": "#c19d6c",
+      "font_size": "3vh",
+      "scroll_speed": 50,
+      "scroll_direction": "left",
+      "is_active": true,
+      "expected_separator_type": "custom",
+      "description": "Custom pipe separator should override all defaults"
+    },
+    
+    "svg_default": {
+      "id": 2,
+      "footer_text": "Menu A <separator> Menu B <separator> Menu C",
+      "separator_text": null,
+      "text_color": "#333333",
+      "background_color": "#f5f5f5",
+      "font_size": "2.5vh",
+      "scroll_speed": 30,
+      "scroll_direction": "left",
+      "is_active": true,
+      "expected_separator_type": "svg",
+      "description": "SVG crown separator when no custom separator specified"
+    },
+    
+    "emoji_fallback": {
+      "id": 3,
+      "footer_text": "Today's Special <separator> Tomorrow's Favorite",
+      "separator_text": null,
+      "text_color": "#ffffff",
+      "background_color": "#2c3e50",
+      "font_size": "4vh",
+      "scroll_speed": 80,
+      "scroll_direction": "left",
+      "is_active": true,
+      "expected_separator_type": "emoji",
+      "description": "Emoji crown fallback when SVG fails to load",
+      "simulate_svg_failure": true
+    },
+    
+    "space_fallback": {
+      "id": 4,
+      "footer_text": "Minimal Design <separator> Maximum Impact",
+      "separator_text": null,
+      "text_color": "#000000",
+      "background_color": "#ffffff",
+      "font_size": "3.5vh",
+      "scroll_speed": 25,
+      "scroll_direction": "left",
+      "is_active": true,
+      "expected_separator_type": "space",
+      "description": "Space-only separator as final fallback",
+      "simulate_all_failures": true
+    },
+    
+    "star_emoji_custom": {
+      "id": 5,
+      "footer_text": "Special Offers <separator> Limited Time Only",
+      "separator_text": " ⭐ ",
+      "text_color": "#ffd700",
+      "background_color": "#1a1a1a",
+      "font_size": "3vh",
+      "scroll_speed": 60,
+      "scroll_direction": "left",
+      "is_active": true,
+      "expected_separator_type": "custom",
+      "description": "Custom star emoji separator"
+    }
+  },
+  
+  "resolution_test_cases": [
+    {
+      "name": "custom_overrides_all",
+      "input": {
+        "separator_text": " | ",
+        "svg_available": true,
+        "emoji_available": true
+      },
+      "expected_output": {
+        "selectedType": "custom",
+        "content": " | ",
+        "isLoading": false,
+        "loadError": null
+      }
+    },
+    
+    {
+      "name": "svg_when_no_custom",
+      "input": {
+        "separator_text": null,
+        "svg_available": true,
+        "emoji_available": true
+      },
+      "expected_output": {
+        "selectedType": "svg",
+        "content": "<img class=\"sep\" src=\"assets/images/pinas_kroon.svg\" alt=\"\" role=\"presentation\" aria-hidden=\"true\" />",
+        "isLoading": false,
+        "loadError": null
+      }
+    },
+    
+    {
+      "name": "emoji_fallback_svg_fails",
+      "input": {
+        "separator_text": null,
+        "svg_available": false,
+        "emoji_available": true
+      },
+      "expected_output": {
+        "selectedType": "emoji",
+        "content": " 👑 ",
+        "isLoading": false,
+        "loadError": "SVG separator failed to load"
+      }
+    },
+    
+    {
+      "name": "space_fallback_all_fail",
+      "input": {
+        "separator_text": null,
+        "svg_available": false,
+        "emoji_available": false
+      },
+      "expected_output": {
+        "selectedType": "space",
+        "content": "   ",
+        "isLoading": false,
+        "loadError": "All separator options failed"
+      }
+    }
+  ],
+  
+  "visual_test_scenarios": {
+    "double_separator_detection": {
+      "description": "Test cases to detect when multiple separator types appear simultaneously",
+      "test_elements": [
+        {
+          "selector": ".scrolling-separator img.sep",
+          "description": "SVG crown separators",
+          "should_exist_when": ["svg_default"]
+        },
+        {
+          "selector": ".scrolling-separator:contains('👑')",
+          "description": "Emoji crown separators",
+          "should_exist_when": ["emoji_fallback"]
+        },
+        {
+          "selector": ".scrolling-separator:contains('|')",
+          "description": "Custom pipe separators",
+          "should_exist_when": ["custom_separator"]
+        },
+        {
+          "selector": ".scrolling-separator:contains('⭐')",
+          "description": "Custom star separators",
+          "should_exist_when": ["star_emoji_custom"]
+        }
+      ]
+    },
+    
+    "screenshot_comparisons": {
+      "baseline_path": "tests/visual-regression/baselines",
+      "test_output_path": "tests/visual-regression/output",
+      "diff_path": "tests/visual-regression/diffs",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "footer_area": {
+        "x": 0,
+        "y": 980,
+        "width": 1920,
+        "height": 100
+      }
+    }
+  },
+  
+  "performance_benchmarks": {
+    "separator_resolution_max_time": "1ms",
+    "configuration_apply_max_time": "50ms",
+    "animation_fps_minimum": 58,
+    "api_response_max_time": "100ms",
+    "dom_update_max_time": "10ms"
+  },
+  
+  "contract_validation": {
+    "separator_types": ["custom", "svg", "emoji", "space"],
+    "priority_chain": ["custom", "svg", "emoji", "space"],
+    "required_state_properties": ["selectedType", "content", "isLoading"],
+    "visual_consistency_rules": [
+      "Multiple separator types MUST NOT appear simultaneously in DOM",
+      "All separators in single footer MUST use same selectedType",
+      "Separator styling MUST be consistent throughout footer",
+      "Configuration changes MUST update all separators atomically"
+    ]
+  }
+}
