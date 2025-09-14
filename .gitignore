@@ -103,3 +103,8 @@ dist
 
 # Snapcoder screenshots
 snapcoder/
+
+# Playwright test results and screenshots
+test-results/
+playwright-report/
+.playwright-mcp/
