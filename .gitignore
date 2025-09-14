@@ -108,3 +108,6 @@ snapcoder/
 test-results/
 playwright-report/
 .playwright-mcp/
+**/test-results/
+**/*-snapshots/
+**/snapshots/
